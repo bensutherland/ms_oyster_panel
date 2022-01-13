@@ -4,4 +4,10 @@
 *.log
 *.nosex
 *.raw
+*Rhistory
+*~*
+*.Rdata
+*.pdf
+*.csv
+*.png
 
