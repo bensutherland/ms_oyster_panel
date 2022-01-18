@@ -1,4 +1,6 @@
 *.fna.gz
+*.fna
+*.fa
 *.map
 *.ped
 *.log
@@ -11,4 +13,5 @@
 *.csv
 *.png
 *.vcf
+*.DS_Store*
 
