@@ -32,7 +32,23 @@ Use the marker file from above, and select top FST or top Hobs then extract the 
 Sort the marker file, then select the top 300 FST markers:     
 `grep -vE '^mname' 03_marker_selection/all_markers_per_locus_stats_incl_hobs_MAF.csv | awk -F, '{ print $1 "," $3 }' - | sort -t, -gk2 -r - | head -n 300 > 04_extract_loci/top_fst_mname_fst.csv`        
 
+Output will be rows of markers, no header, e.g., `585541_17_C,0.082`      
+
 
 Sort the marker file, keep only columns where Hobs is less than or equal 0.5, then select the top 300 Hobs markers:     
 `awk -F, '$6<=0.5 { print $1 "," $6 }' 03_marker_selection/all_markers_per_locus_stats_incl_hobs_MAF.csv | sort -t, -gk2 -r - | head -n 300 > 04_extract_loci/top_hobs_mname_hobs.csv`      
+
+Output will be rows of markers, no header, e.g., `92947_23_A,0.5`     
+
+To extract from the reference genome, we will use bedtools combined with a bedfile.     
+The bedfile will be in the shape of:     
+```
+chr1 5 10
+```
+...where the file is space separated, and the positions refer to positions in the contig/scaffold starting counting from position 0.      
+
+
+
+
+
 
