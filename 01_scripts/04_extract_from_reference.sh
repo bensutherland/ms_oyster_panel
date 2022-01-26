@@ -15,4 +15,9 @@ rm $OUTPUT_FOLDER/$OUTPUT
 # Extract from fasta
 bedtools getfasta -fi $INPUT_FOLDER/$REF_GENOME -bed $OUTPUT_FOLDER/$BED_FILE > $OUTPUT_FOLDER/$OUTPUT
 
+echo "Creating a two column tab delimited output to match the selected fasta"
+
+# Make associated csv by separating each fasta accession into a tab delimited file
+awk 'BEGIN { RS = ">" ; OFS = "\t" } NR>1 { print $1, $2 }' $OUTPUT_FOLDER/$OUTPUT > $OUTPUT_FOLDER/selected_chr_and_seq.txt
+
 
