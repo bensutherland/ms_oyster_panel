@@ -19,8 +19,9 @@ cat $OUTPUT_FOLDER/top*.csv |
     sort |
     uniq |
 
-    # Remove positional and variant information from the mname. Add colon to match VCF. 
-    awk -F_ '{ print $1":" }' - | 
+    # Remove positional and variant information from the mname. 
+    # Add colon to match VCF. Add mname position, plus 1 due to 0-based count.   
+    awk -F_ '{ print $1 ":" $2+1 }' - | 
 
     # For each mname, extract the relevant section of the vcf
     while read i
