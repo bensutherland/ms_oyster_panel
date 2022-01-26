@@ -106,12 +106,21 @@ JH816256.1	99259	99660
 # this will output to stdout a 401-base record, where the variant is at position 201 (in 1-base state)
 >JH816256.1:99259-99660
 TACGT....
-
 ```
 
 
-# 04 Extract FASTA from reference genome
-Use the following to prepare a bed file from the relevant lines of the bcf
+### 05. Extract FASTA from reference genome
+Use the following to prepare a bed file from the relevant lines of the vcf
 `01_scripts/03_prepare_bed_file.sh`     
+...will produce `04_extract_loci/vcf_selection.bed`
+
+Then use the following to extract the relevant sequence from the genome
+`01_scripts/04_extract_from_reference.sh`       
+...will produce `04_extract_loci/vcf_selection.fa`        
+
+
+### 06. Bring all back together and create submission file
+
+
 
 
