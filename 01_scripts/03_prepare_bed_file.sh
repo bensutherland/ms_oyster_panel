@@ -10,5 +10,5 @@ OUTPUT="vcf_selection.bed"
 echo "Subtracting 201 bp from the front and adding 200 bp to the back"
 echo "...since preparing for a 0-state count"
 
-awk -F, '{ print $1, $2-201, "\t", $2+200 }' $OUTPUT_FOLDER/$INPUT > $OUTPUT_FOLDER/$OUTPUT
+awk -F, '{ print $1 "\t" $2-201 "\t" $2+200 }' $OUTPUT_FOLDER/$INPUT > $OUTPUT_FOLDER/$OUTPUT
 
