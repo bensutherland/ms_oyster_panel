@@ -134,9 +134,15 @@ head(all_data)
 # How many didn't match the expectation? 
 table(all_data$ref_nuc == all_data$ref)
 
-# CONFIRM matching REF/ and calculated REF/ 
-# TODO #
-##### HERE TODAY ####
+# Create a vector to indicate the non-matching amplicons
+all_data$ref_allele_match <- all_data$ref_nuc == all_data$ref
+
+head(x = all_data, n = 2)
+
+# TROUBLESHOOTING, WRITE OUT
+write.csv(x = all_data, file = "05_submission_form/data_output.csv", quote = F, row.names = F)
+
+
 
 all_data$formatted_seq <- paste0(all_data$left_seq, "[", all_data$ref, "/", all_data$alt, "]", all_data$right_seq)
 
