@@ -35,130 +35,182 @@ species <- "Cgig"
 
 #### 1. Import data ####
 ### Import sequence data ###
-selected_chr_and_seq <- read.delim2(file = paste0(input.dir, "selected_chr_and_seq.txt"), header = F)
-colnames(selected_chr_and_seq) <- c("chr_info", "seq")
-head(selected_chr_and_seq, n = 1)
+seq.df <- read.delim2(file = paste0(input.dir, "selected_chr_and_seq.txt"), header = F)
+seq.df <- as.data.frame(x = seq.df)
+colnames(seq.df) <- c("chr_info", "seq")
+head(seq.df, n = 1)
 
 # Separate columns into individual details
-selected_chr_and_seq <- separate(data = selected_chr_and_seq, col = "chr_info", into = c("chr", "pos_range"), sep = ":", remove = T)
-selected_chr_and_seq <- separate(data = selected_chr_and_seq, col = "pos_range", into = c("lower_range", "upper_range"), sep = "-", remove = T)
+seq.df <- separate(data = seq.df, col = "chr_info", into = c("mname", "chr_info"), sep = "::", remove = T)
+seq.df$mname <- gsub(pattern = "mname_", replacement = "", x = seq.df$mname)
+seq.df <- separate(data = seq.df, col = "chr_info", into = c("chr", "pos_range"), sep = ":", remove = T)
+seq.df <- separate(data = seq.df, col = "pos_range", into = c("lower_range", "upper_range"), sep = "-", remove = T)
 
-head(x = selected_chr_and_seq, n = 1)
-str(selected_chr_and_seq)
+head(x = seq.df, n = 1)
 
 # Update formats
-selected_chr_and_seq$seq         <- as.character(selected_chr_and_seq$seq)
-selected_chr_and_seq$lower_range <- as.numeric(selected_chr_and_seq$lower_range)
-selected_chr_and_seq$upper_range <- as.numeric(selected_chr_and_seq$upper_range)
-head(x = selected_chr_and_seq, n = 1)
-str(selected_chr_and_seq)
+seq.df$seq         <- as.character(seq.df$seq)
+seq.df$lower_range <- as.numeric(seq.df$lower_range)
+seq.df$upper_range <- as.numeric(seq.df$upper_range)
+head(x = seq.df, n = 1)
+str(seq.df)
 
 
 ### Import marker data ###
-selected_marker_info <- read.delim2(file = paste0(input.dir, "vcf_selection.csv"), header = F, sep = ",")
-colnames(x = selected_marker_info) <- c("chr", "pos", "info", "ref", "alt")
-head(selected_marker_info, n = 2)
+minfo.df <- read.delim2(file = paste0(input.dir, "vcf_selection.csv"), header = F, sep = ",")
+minfo.df <- as.data.frame(x = minfo.df, stringsAsFactors = F)
+head(minfo.df)
+colnames(x = minfo.df) <- c("chr", "pos", "info", "ref", "alt")
+
+minfo.df$ref <- as.character(minfo.df$ref)
+minfo.df$alt <- as.character(minfo.df$alt)
+minfo.df$chr <- as.character(minfo.df$chr)
+
+head(minfo.df, n = 2)
+str(minfo.df)
 
 # Separate columns into individual details
-selected_marker_info <- separate(data = selected_marker_info, col = "info", into = c("mname", "SNP_pos", "align_strand"), sep = ":", remove = T)
-head(selected_marker_info, n = 2)
-
-str(selected_marker_info)
+minfo.df <- separate(data = minfo.df, col = "info", into = c("mname", "SNP_pos", "align_strand"), sep = ":", remove = T)
+head(minfo.df, n = 2)
+str(minfo.df)
 
 #### 02. Combine datasets into one ####
 ## Merge data
+head(x = seq.df, n = 1)
+head(minfo.df, n = 1)
+nrow(seq.df)
+nrow(minfo.df)
 
-# Issue identified, mitigated. Not all chromosomes are unique, as shown below
-nrow(selected_chr_and_seq)
-nrow(selected_marker_info)
-length(union(x = selected_chr_and_seq$chr, selected_marker_info$chr))
+seq_and_minfo.df <- merge(x = seq.df, y = minfo.df, by = "mname")
+nrow(seq_and_minfo.df)
+
+head(seq_and_minfo.df, n = 2)
+
+# Change nucleotides to all upper case
+seq_and_minfo.df$seq <- toupper(x = seq_and_minfo.df$seq)
 
 # Use loop to confirm chromosome is equal and position fits within the range
 
-# Set nulls
-chroi <- NULL; lower.oi <- NULL; upper.oi <- NULL; chunk.df <- NULL
-
-for(i in 1:nrow(selected_chr_and_seq)){
-  
-  # Variables for this loop
-  chroi <-    selected_chr_and_seq[i, "chr"]
-  lower.oi <- selected_chr_and_seq[i, "lower_range"]
-  upper.oi <- selected_chr_and_seq[i, "upper_range"]
-  
-  # Reporting, what are we looking for
-  print(paste0("Looking for ", chroi, " within range ", lower.oi, "-", upper.oi))
-  
-  # Subset matching dataframe, including only rows for which the chromosome is equal
-  chunk.df <- selected_marker_info[which(selected_marker_info$chr==chroi), ]
-  
-  # Then check to see if the marker with the equal chromosome ID whether the position (VCF) is also fit within the expected range (FASTA accn)
-  for(n in 1:nrow(chunk.df)){
-    
-    if(chunk.df$pos[n] > lower.oi && chunk.df$pos[n] < upper.oi){
-      
-      mname.oi <- chunk.df[n,"mname"]
-      selected_chr_and_seq$mname[i] <- mname.oi
-      
-    }
-    
-  }
-  
-  
-}
-rm(list = c("chroi", "i", "n", "lower.oi", "upper.oi", "chunk.df", "mname.oi"))
-
-
-# Check, were all mnames retrieved? 
-length(selected_chr_and_seq$mname)
-nrow(selected_chr_and_seq)
+# # Set nulls
+# chroi <- NULL; lower.oi <- NULL; upper.oi <- NULL; chunk.df <- NULL
+# 
+# for(i in 1:nrow(seq.df)){
+#   
+#   # Variables for this loop
+#   chroi <-    seq.df[i, "chr"]
+#   lower.oi <- seq.df[i, "lower_range"]
+#   upper.oi <- seq.df[i, "upper_range"]
+#   
+#   # Reporting, what are we looking for
+#   print(paste0("Looking for ", chroi, " within range ", lower.oi, "-", upper.oi))
+#   
+#   # Subset matching dataframe, including only rows for which the chromosome is equal
+#   chunk.df <- minfo.df[which(minfo.df$chr==chroi), ]
+#   
+#   # Then check to see if the marker with the equal chromosome ID whether the position (VCF) is also fit within the expected range (FASTA accn)
+#   for(n in 1:nrow(chunk.df)){
+#     
+#     if(chunk.df$pos[n] > lower.oi && chunk.df$pos[n] < upper.oi){
+#       
+#       mname.oi <- chunk.df[n,"mname"]
+#       seq.df$mname[i] <- mname.oi
+#       
+#     }
+#     
+#   }
+#   
+#   
+# }
+# rm(list = c("chroi", "i", "n", "lower.oi", "upper.oi", "chunk.df", "mname.oi"))
+# 
+# 
+# # Check, were all mnames retrieved? 
+# length(seq.df$mname)
+# nrow(seq.df)
 
 ### Combined data ###
-all_data <- merge(x = selected_chr_and_seq, y = selected_marker_info, by = "mname")
+# all_data <- merge(x = seq.df, y = minfo.df, by = "mname")
 
-all_data$seq <- toupper(x = all_data$seq)
+
 
 # Separate the sequence into the first 200 bp, the variant (ref allele), then the second 200 bp 
-all_data$left_seq  <- substr(x = all_data$seq, start =   1, stop = 200) 
-all_data$ref_nuc   <- substr(x = all_data$seq, start = 201, stop = 201)
-all_data$right_seq <- substr(x = all_data$seq, start = 202, stop = 401)
+seq_and_minfo.df$left_seq  <- substr(x = seq_and_minfo.df$seq, start =   1, stop = 200) 
+seq_and_minfo.df$ref_nuc   <- substr(x = seq_and_minfo.df$seq, start = 201, stop = 201)
+seq_and_minfo.df$right_seq <- substr(x = seq_and_minfo.df$seq, start = 202, stop = 401)
 
 # Add values into the constant columns
-all_data$strand <- rep("NA", times = nrow(all_data))
-all_data$mtype <- rep("SNP", times = nrow(all_data))
-all_data$priority <- rep(2, times = nrow(all_data))
+seq_and_minfo.df$strand <- rep("NA", times = nrow(seq_and_minfo.df))
+seq_and_minfo.df$mtype <- rep("SNP", times = nrow(seq_and_minfo.df))
+seq_and_minfo.df$priority <- rep(2, times = nrow(seq_and_minfo.df))
 
-# Update
-
-head(all_data)
+head(seq_and_minfo.df, n = 1)
 
 # How many didn't match the expectation? 
-table(all_data$ref_nuc == all_data$ref)
+table(seq_and_minfo.df$ref_nuc == seq_and_minfo.df$ref)
 
 # Create a vector to indicate the non-matching amplicons
-all_data$ref_allele_match <- all_data$ref_nuc == all_data$ref
+seq_and_minfo.df$ref_allele_match <- seq_and_minfo.df$ref_nuc == seq_and_minfo.df$ref
 
-head(x = all_data, n = 2)
-
-# TROUBLESHOOTING, WRITE OUT
-write.csv(x = all_data, file = "05_submission_form/data_output.csv", quote = F, row.names = F)
+head(x = seq_and_minfo.df, n = 1)
 
 
+head(seq_and_minfo.df, n = 1)
 
-all_data$formatted_seq <- paste0(all_data$left_seq, "[", all_data$ref, "/", all_data$alt, "]", all_data$right_seq)
+### Confirm no issue with nucleotides and hotspot design
+# SPECIAL NOTE: It appears that stacks doesn't always call the genome nucleotide the 'reference allele'
+for(i in 1:nrow(seq_and_minfo.df)){
+  
+  if(seq_and_minfo.df$ref_nuc[i]==seq_and_minfo.df$ref[i]){
+    
+    seq_and_minfo.df$true_ref[i] <- seq_and_minfo.df$ref[i]
+    seq_and_minfo.df$true_alt[i] <- seq_and_minfo.df$alt[i]
+    
+    # If they aren't correctly oriented to the reference genome, flip them
+    
+  } else if(seq_and_minfo.df$ref_nuc[i]==seq_and_minfo.df$alt[i]){
+    
+    seq_and_minfo.df$true_ref[i] <- seq_and_minfo.df$alt[i]
+    seq_and_minfo.df$true_alt[i] <- seq_and_minfo.df$ref[i]
+    
+  } else {
+    
+    print(paste0("The marker at ", seq_and_minfo.df$mname[i], " is unexpected, adding unknown to this record"))
+    
+    seq_and_minfo.df$true_ref[i] <- "unkn"
+    seq_and_minfo.df$true_alt[i] <- "unkn"
+    
+  }
+}
 
-head(all_data, n = 3)
+# How many oddballs failed? 
+table(seq_and_minfo.df$true_ref=="unkn")
 
-all_data_final <- all_data[, c("mname", "chr.x", "pos", "pos"
-                               , "ref", "alt", "strand", "mtype"
+# If ok with losing the marker: 
+seq_and_minfo.df <- seq_and_minfo.df[which(seq_and_minfo.df$true_ref!="unkn"), ]
+
+nrow(seq_and_minfo.df)
+table(seq_and_minfo.df$true_ref=="unkn")
+
+head(seq_and_minfo.df, n = 1)
+
+# Recombine the seq data back together
+seq_and_minfo.df$formatted_seq <- paste0(seq_and_minfo.df$left_seq, "[", seq_and_minfo.df$true_ref, "/", seq_and_minfo.df$true_alt, "]", seq_and_minfo.df$right_seq)
+
+
+# Write out results (full) for troubleshooting
+write.csv(x = seq_and_minfo.df, file = paste0(output.dir, "seq_and_minfo_all_data.csv"), quote = F, row.names = F)
+
+seq_and_minfo.df <- seq_and_minfo.df[, c("mname", "chr.x", "pos", "pos"
+                               , "true_ref", "true_alt"
+                               , "strand", "mtype"
                                , "priority", "formatted_seq"
                                )]
 
-head(all_data_final)
+head(seq_and_minfo.df)
+
+write.csv(x = seq_and_minfo.df, file = paste0(output.dir, "seq_and_minfo_for_submission.csv"), quote = F, row.names = F)
+
+
 
 #### Next Steps: #####
-# FINALIZE quality checking above
-# then write out results
-# May want to converta ll to capitals
-# 
-
-
+# Can do some data checking, and then can submit the markers for designing primers
