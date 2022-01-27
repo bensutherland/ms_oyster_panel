@@ -12,8 +12,10 @@ OUTPUT="vcf_selection.fa"
 echo "Removing $OUTPUT to make new file" 
 rm $OUTPUT_FOLDER/$OUTPUT
 
-# Extract from fasta
-bedtools getfasta -fi $INPUT_FOLDER/$REF_GENOME -bed $OUTPUT_FOLDER/$BED_FILE > $OUTPUT_FOLDER/$OUTPUT
+# Extract from fasta, keep the full header information in field 4
+bedtools getfasta -fi $INPUT_FOLDER/$REF_GENOME \
+    -bed $OUTPUT_FOLDER/$BED_FILE \
+    -name -fullHeader > $OUTPUT_FOLDER/$OUTPUT
 
 echo "Creating a two column tab delimited output to match the selected fasta"
 
