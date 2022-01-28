@@ -1,12 +1,17 @@
 # ms_oyster_panel
-Code to support the design of a Pacific oyster amplicon panel.     
+Code to support the design of a Pacific oyster amplicon panel. Go from a stacks-produced VCF/ plink data and reference genome to a submission-ready text file for amplicon design.      
 
-Note: this repository is for the designed use of the author only and comes with no guarantees of usefulness for anything else.       
+_Note: this repository is for the designed use of the author only and comes with no guarantees of usefulness for anything else._      
+Requires basic Linux or Mac OS.      
+All shell scripts are run from the main directory.     
 
-Requirements:      
-enormandeau/Scripts     
+#### Requirements:      
+- bedtools     
+- [Eric Normandeau's scripts](https://github.com/enormandeau/Scripts)        
+- R libraries as designated in the Rscripts     
+ 
 
-Data inputs:     
+#### Data inputs:     
 - Single SNP data in plink format from Sutherland et al. 2020 (Evol. Appl.)        
 - Single SNP data populations output in VCF format       
 - Reference genome for Pacific oyster used in identifying markers (Zhang et al. 2012; Sutherland et al. 2020)         
@@ -14,19 +19,18 @@ Download this version, GenBank format: https://www.ncbi.nlm.nih.gov/assembly/GCF
 
 Note: in Sutherland et al. 2020, the genetic data was been filtered to retain markers present in 70% of individuals in all of 15 populations, with a --min-maf >= 0.01, and with HWE outliers removed.        
 
-All shell scripts are run from the main repo.     
-
 
 ### 01. Filter and characterize variants ###
 Use the script `01_scripts/01_identifying_markers.R` run interactively in R. This script will do the following:      
-1. Load packages and set working directory
-2. Import data and select only the BC naturalized samples
-3. Perform minor allele frequency (MAF) filter to remove low MAF variants wrt. BC pops
-4. Calculate per locus stats observed heterozygosity (Hobs) and FST (averaged per locus)
-5. Generate comparative plots
-6. Output a csv of marker per locus stats for all MAF-filtered variants as `03_marker_selection/all_markers_per_locus_stats_incl_hobs_MAF.csv`     
+1. Import data and select only the BC naturalized samples
+2. Perform minor allele frequency (MAF) filter to remove low MAF variants wrt. BC pops
+3. Calculate per locus stats observed heterozygosity (Hobs) and FST (averaged per locus)
+4. Generate comparative per locus stats plots
 
-Marker file: 
+...output per locus stats for filtered variants:      
+`03_marker_selection/all_markers_per_locus_stats_incl_hobs_MAF.csv`     
+
+...with the following format:    
 ```
 mname,Fit,Fst,Fis,maf.vec,Hobs
 100026_37_C,-0.011,0.00777,-0.0192,0.0173,0.0347 
@@ -43,13 +47,14 @@ Output will be rows of markers, no header, e.g., `585541_17_C,0.082`
 Top Hobs (but below 0.5):        
 `awk -F, '$6<=0.5 { print $1 "," $6 }' 03_marker_selection/all_markers_per_locus_stats_incl_hobs_MAF.csv | sort -t, -gk2 -r - | head -n 300 > 04_extract_loci/top_hobs_mname_hobs.csv`      
 
-Output will be rows of markers, no header, e.g., `92947_23_A,0.5`     
+...outputs `top_*.csv` files with the following format, without a header:     
+`92947_23_A,0.5`      
 
 
 ### 03. Collect the whitelist marker info from VCF ###
-Run the following script:       
+Obtain specific information about these markers from the larger VCF:       
 `01_scripts/02_info_from_vcf.sh`          
-...this will output `04_extract_loci/vcf_selection.csv`, which contains (for example):             
+...outputs `04_extract_loci/vcf_selection.csv`, which contains (for example):             
 
 
 ```
@@ -65,21 +70,21 @@ JH816256.1,99460,100388:26:-,G,A
 ```
 
 ### 04. Overview ####
-This section is optional, and shows the logic underlying following steps.      
+This section is for review only, but contains some relevant information about formats.     
 To extract from the reference genome, we will use bedtools combined with a bedfile.     
-The bedfile will be in the shape of:     
+The bedfile will be in the format of:     
 ```
-chr1	5	10
+chr1	5	10	<VCF_info_field>
 ```
-...where the file is tab-delimited, and the positions refer to selecting positions in the contig/scaffold starting counting from position 0.      
+...a tab-delimited file with positions refering to select positions in the contig/scaffold starting counting from position 0.      
 
-To get a better view of the fasta file, use the enormandeau/Scripts to unwrap the fasta file so that each record's nucleotide section takes up a single line.     
+Get a better view of an accession in the fasta. First, use `enormandeau/Scripts/fasta_unrwap.py` to get a better view of the fasta file. 
 `fasta_unwrap.py 02_input_data/GCA_000297895.1_oyster_v9_genomic.fna 02_input_data/GCA_000297895.1_oyster_v9_genomic_unwrapped.fna`     
 
-Take an example:       
-`JH816256.1,99460,100388:26:-,G,A` from `04_extract_loci/vcf_selection.csv`       
+Take an example from the VCF information:       
+`JH816256.1,99460,100388:26:-,G,A`       
 
-Also review the fasta consensus sequence for this from the stacks fasta file:      
+Review the fasta consensus sequence for this from the stacks fasta file:      
 ```
 >CLocus_100388 [JH816256.1, 99396, -]
 TGCATCTGTCCTCTTTTCTGTGCTTCATTGATGGTCATTTTGGATACCTGTTTGACTTAACTGATTTAGATAAGATGATCATGTGTTGTG
@@ -113,6 +118,7 @@ TACGT....
 Use the following to prepare a bed file from the relevant lines of the vcf
 `01_scripts/03_prepare_bed_file.sh`     
 ...will produce `04_extract_loci/vcf_selection.bed`
+note: this will include a fourth column that can be used for matching the output fasta back to the VCF (i.e., mname).     
 
 Then use the following to extract the relevant sequence from the genome
 `01_scripts/04_extract_from_reference.sh`       
@@ -120,7 +126,25 @@ Then use the following to extract the relevant sequence from the genome
 
 
 ### 06. Bring all back together and create submission file
+Use the following rscript interactively to join the sequence data (produced from the fasta) to the marker information (produced from the VCF):        
+`05_make_submission_form.R`       
+
+This script will do the following:     
+
+...this will produce `05_submission_form/seq_and_minfo_for_submission.csv`, which contains the following:    
+1. marker name;     
+2. chromosome (scaffold);     
+3. reference allele (reference based on the reference genome)   
+4. alternate allele
+5. strand;     
+6. marker type;    
+7. priority level;     
+8. formatted sequence (...ATGC[A/G]ATGC...)     
+
+Note that the reference allele is given that designation based on the reference genome nucleotide and doesn't always indicate in that manner in the VCF. A switch will occur in the Rscript to switch these identities, if the VCF alt allele is the allele in the reference genome. 
+
+For data checking purposes, a full dataframe as generated through the Rscript process is also output as `05_submission_form/seq_and_minfo_all_data.csv`       
 
 
-
+#### Now the data can be submitted for marker design ####
 
