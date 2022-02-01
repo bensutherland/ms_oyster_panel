@@ -309,7 +309,16 @@ abline(v = 0.5, lty = 2)
 dev.off()
 
 
+#### 10. Write out Rdata
+##### 9. Save Results ####
+save.image(file = paste0(output.dir, "adegenet_output.RData"))
+
+
 #### Next Steps: #####
 # Now you have both the top FST markers, and the best heterozygosity markers
 # The data was already filtered for HWE and MAF (within selected pops)
 # The next step is to take the lists of top Fst markers and top Hobs markers, then use these to extract from the vcf and the reference genome
+
+# An additional next step is to go to the Rscript private_alleles.r, which will require you to load the image
+#  and use the adegenet_output.RData's my.data.gid to work on some private allele work
+
