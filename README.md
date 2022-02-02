@@ -39,7 +39,21 @@ mname,Fit,Fst,Fis,maf.vec,Hobs
 ```
 
 
-### 02a. Select the top markers to create whitelists ###
+### 02. Additional markers to include
+Custom markers will be included in the panel. Currently this includes markers that are private alleles for a couple of populations in culture only in British Columbia. This will use code and resources adapted from `https://github.com/bensutherland/ms_oyster_popgen`, specifically the following:     
+`00_archive/my_cols.csv`         
+`01_scripts/private_alleles.r`      
+...which have been named with the same filenames/ folders in the current repo, but updated mainly to allow output of specific marker names.    
+
+Run `01_scripts/private_alleles.r`      
+...this will identify mnames of high frequency private alleles from DPB and GUR populations.    
+Outputs:    
+`03_marker_selection/per_repunit_private_allele_tally_all_data.csv`     
+`03_marker_selection/DPB_selected_PA_mnames.csv`    
+`03_marker_selection/GUR_selected_PA_mnames.csv`    
+
+
+### 03. Select the top markers to create whitelists ###
 Use the marker file from above, and select top FST or top Hobs then extract the relevant information from the VCF.      
 Top FST:     
 `grep -vE '^mname' 03_marker_selection/all_markers_per_locus_stats_incl_hobs_MAF.csv | awk -F, '{ print $1 "," $3 }' - | sort -t, -gk2 -r - | head -n 300 > 04_extract_loci/top_fst_mname_fst.csv`        
@@ -52,18 +66,6 @@ Top Hobs (but below 0.5):
 ...outputs `top_*.csv` files with the following format, without a header:     
 `92947_23_A,0.5`      
 
-
-### 02.b Additional markers to include
-Custom markers will be included. Currently this includes markers that are private alleles for a couple of populations in culture only in British Columbia. This will use code adapted from `https://github.com/bensutherland/ms_oyster_popgen`, specifically the following:     
-`00_archive/my_cols.csv`         
-`01_scripts/private_alleles.r`      
-...which have been named the same in the current repo, but updated.    
-
-Running the Rscript will allow you to identify the names of private alleles with high frequency of observation in pops DPB and GUR.    
-Outputs:    
-`03_marker_selection/per_repunit_private_allele_tally_all_data.csv`     
-`03_marker_selection/DPB_selected_PA_mnames.csv`    
-`03_marker_selection/GUR_selected_PA_mnames.csv`    
 
 
 ### 03. Collect the whitelist marker info from VCF ###

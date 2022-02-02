@@ -32,7 +32,7 @@ if(Sys.info()["nodename"] == "stark"){
   setwd("~/Documents/01_moore_oyster_project/stacks_workflow_all_data/") # Xavier
 } else if(Sys.info()["nodename"] == "Wayne.local"){
   print("Wayne, ready to go")
-  setwd("~/Documents/00_sutherland_bioinformatics/GBMF_UBC_Pacific_oyster/private_alleles/stacks_workflow/") # Wayne
+  setwd("~/Documents/00_sutherland_bioinformatics/GBMF_UBC_Pacific_oyster/ms_oyster_panel")  # Wayne
 } else {
   print("You are on an unrecognized system, please set working directory manually")
 }
@@ -41,8 +41,7 @@ if(Sys.info()["nodename"] == "stark"){
 # sessionInfo()
 
 # Set variables
-#output.dir <- "11-adegenet_analysis/"
-output.dir <- "03_marker_selection//"
+output.dir <- "03_marker_selection/"
 
 #### 01. Input data and prepare ####
 ## Load inputs
@@ -51,7 +50,8 @@ load(file = paste0(output.dir, "adegenet_output.RData"))
 my.data.gid
 
 # Load colours file
-my_cols.df <- read.csv(file = "../ms_oyster_popgen/00_archive/my_cols.csv", stringsAsFactors = F)
+my_cols.df <- read.csv(file = "00_resources/my_cols.csv", stringsAsFactors = F)
+#TODO: update README with correct location
 str(my_cols.df)
 
 #### 02. Private alleles
@@ -59,38 +59,8 @@ str(my_cols.df)
 # Tabulate alleles the occur in only one population. 
 private_alleles(gid = my.data.gid)
 
-# Do separately for different contrasts
-## Prepare individual analyses of genind by separating all pops
-sep.obj <- seppop(x = my.data.gid)
-names(sep.obj)
+global.gid <- my.data.gid
 
-# Create list of various combinations of repooled pops
-# "global" is the comparison of one representative from each main pop
-datatype.list <- list()
-datatype.list[["global"]] <- repool(sep.obj$PEN
-                                    , sep.obj$CHN, sep.obj$QDC, sep.obj$RSC
-                                    , sep.obj$DPB, sep.obj$ROS, sep.obj$GUR
-                                    , sep.obj$FRA
-                                    , sep.obj$JPN
-)
-
-datatype.list[["all"]] <- my.data.gid
-
-datatype.list[["bare.minimum"]] <- repool(sep.obj$PEN
-                                          , sep.obj$CHN
-                                          , sep.obj$DPB
-                                          , sep.obj$GUR
-                                          
-)
-
-
-## Select the dataset
-## Main analysis:
-global.gid <- datatype.list[["all"]]
-
-## Test analyses
-#global.gid <- datatype.list[["bare.minimum"]]
-#global.gid <- datatype.list[["global"]]
 
 ## Create a df that defines the strata for each individual in the rows
 strata.df <- as.data.frame(as.character(pop(global.gid)), stringsAsFactors = FALSE)
@@ -163,8 +133,8 @@ rowSums(pal)
 global.priv <- private_alleles(global.gid, alleles ~ repunit, report = "data.frame")
 ggplot(global.priv) + geom_tile(aes(x = population, y = allele, fill = count))
 
-
-#### Choose Markers to include - New Work 2022-01-31 ####
+#### (New Work 2022-01-31) ####
+#### Identifying and choosing markers to include ####
 per_repunit.privallele[,1:5]
 per_repunit.privallele.bck <- per_repunit.privallele  # create backup
 
@@ -173,43 +143,16 @@ colnames(per_repunit.privallele)
 colnames(per_repunit.privallele) <- gsub(pattern = ".2", replacement = "", x = colnames(per_repunit.privallele))
 colnames(per_repunit.privallele)
 
-per_repunit.privallele[,1:5]
-
+# Make df
 per_repunit.privallele.df <- as.data.frame(per_repunit.privallele)
-str(per_repunit.privallele.df)
-
-# Considering the MAF
-table(strata.df) # note: there are 20 indiv. DPB, 22 indiv. GUR
-sum(table(strata.df)) # total = 366 indiv
-
-# How many observations needed to consider population-specific MAF
- 20 * 2 * 0.05
-# How many observations needed to consider global MAF
-366 * 2 * 0.01
-# Global MAF would require > 7 observations of the allele (however, remember we have already implemented a MAF filter)
-
-
-# Identify the marker names for specific private alleles
-colnames(x = per_repunit.privallele.df)[which(per_repunit.privallele.df["DPB",] > 7)]
-# colnames(x = per_repunit.privallele.df)[which(per_repunit.privallele.df["DPB",] > 1)]
-
 per_repunit.privallele.df[1:5, 1:5]
-# extract information for DPB
-DPB.data <- per_repunit.privallele.df["DPB",]
-str(DPB.data)
-dim(DPB.data)
-DPB.data <- t(DPB.data)
-head(DPB.data)
 
-# Sort based on highest frequency of the private allele
-DPB.data[order(DPB.data$DPB),]
-
-# Try by transposing
+# Transpose df
 per_repunit.privallele_t.df <- t(per_repunit.privallele.df)
 head(per_repunit.privallele_t.df)
 per_repunit.privallele_t.df <- as.data.frame(per_repunit.privallele_t.df)
 
-# What are the top marker names for each population's private alleles?
+# Identify highest frequency mnames for each population's private alleles
 # DPB
 DPB.selected.pas <- head(
       rownames(
@@ -225,7 +168,17 @@ GUR.selected.pas <- head(
   , n = 5)
 
 # Write out results
-write.csv(x = per_repunit.privallele_t.df, file = "per_repunit_private_allele_tally_all_data.csv", quote = F)
-write.table(x = DPB.selected.pas, file = "DPB_selected_PA_mnames.csv", quote = F, sep = ",", row.names = F, col.names = F)
-write.table(x = GUR.selected.pas, file = "GUR_selected_PA_mnames.csv", quote = F, sep = ",", row.names = F, col.names = F)
+write.csv(x = per_repunit.privallele_t.df, file = paste0(output.dir, "per_repunit_private_allele_tally_all_data.csv"), quote = F)
+write.table(x = DPB.selected.pas, file = paste0(output.dir, "DPB_selected_PA_mnames.csv"), quote = F, sep = ",", row.names = F, col.names = F)
+write.table(x = GUR.selected.pas, file = paste0(output.dir, "GUR_selected_PA_mnames.csv"), quote = F, sep = ",", row.names = F, col.names = F)
 
+
+#### Extra material, thinking about MAF  ####
+table(strata.df) # note: there are 20 indiv. DPB, 22 indiv. GUR
+sum(table(strata.df)) # total = 366 indiv
+
+# How many observations needed to consider population-specific MAF
+20 * 2 * 0.05
+# How many observations needed to consider global MAF
+366 * 2 * 0.01
+# Global MAF would require > 7 observations of the allele (however, remember we have already implemented a MAF filter)
