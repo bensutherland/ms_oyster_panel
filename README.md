@@ -54,21 +54,18 @@ Outputs:
 
 
 ### 03. Select the top markers to create whitelists ###
-Use the marker file from above, and select top FST or top Hobs then extract the relevant information from the VCF.      
-Top FST:     
-`grep -vE '^mname' 03_marker_selection/all_markers_per_locus_stats_incl_hobs_MAF.csv | awk -F, '{ print $1 "," $3 }' - | sort -t, -gk2 -r - | head -n 300 > 04_extract_loci/top_fst_mname_fst.csv`        
+Set the number of markers you want to collect from each, then run `01_scripts/01b_collect_mnames.sh`    
+Output will be rows of mnames and mtype, no header.      
 
-Output will be rows of markers, no header, e.g., `585541_17_C,0.082`      
+`04_extract_loci/selected_mnames.csv`        
+```
+504898_23_C, top_FST
+375205_31_T, top_FST
+563276_7_A, top_FST
+355586_10_A, top_FST
+```
 
-Top Hobs (but below 0.5):        
-`awk -F, '$6<=0.5 { print $1 "," $6 }' 03_marker_selection/all_markers_per_locus_stats_incl_hobs_MAF.csv | sort -t, -gk2 -r - | head -n 300 > 04_extract_loci/top_hobs_mname_hobs.csv`      
-
-...outputs `top_*.csv` files with the following format, without a header:     
-`92947_23_A,0.5`      
-
-
-
-### 03. Collect the whitelist marker info from VCF ###
+### 04. Collect the whitelist marker info from VCF ###
 Obtain specific information about these markers from the larger VCF:       
 `01_scripts/02_info_from_vcf.sh`          
 ...outputs `04_extract_loci/vcf_selection.csv`, which contains (for example):             
