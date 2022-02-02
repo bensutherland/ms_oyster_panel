@@ -22,7 +22,7 @@ library("dartR")
 # Set working directory
 if(Sys.info()["nodename"] == "Wayne.local"){ 
   print("On Wayne, ready to go")
-  setwd("Documents/00_sutherland_bioinformatics/GBMF_UBC_Pacific_oyster/ms_oyster_panel/") 
+  setwd("~/Documents/00_sutherland_bioinformatics/GBMF_UBC_Pacific_oyster/ms_oyster_panel/") 
 } else if(Sys.info()["nodename"] == "Xavier"){
   print("On Xavier, need to set path")
   #setwd("~/Documents/01_moore_oyster_project/stacks_workflow_all_data/") # Xavier
@@ -51,6 +51,7 @@ my.data
 png(file = paste0(output.dir, "maf_glPlot_all.png"), width = 924, height = 600)
 glPlot(x = my.data, posi="topleft") 
 dev.off()
+# note: in this data, it appears that some markers have the second allele as the more common allele
 
 # Create density plot of minor allele frequencies
 pdf(file = paste0(output.dir, "maf_hist_all.pdf"), width = 6, height = 4)
@@ -292,21 +293,26 @@ write.csv(x = all_data.df, file = "03_marker_selection/all_markers_per_locus_sta
 
 
 #### 9. Compare statistics against each other ####
-pdf(file = paste0(output.dir, "maf_vs_fst.pdf"), width = 10, height = 5)
+par(mfrow = c(2,2))
+#pdf(file = paste0(output.dir, "comparative_stats.pdf"), width = 8, height = 8)
+
 plot(x = all_data.df$Fst, y = all_data.df$maf.vec, xlab = "Fst", ylab = "Minor Allele Frequency")
 abline(v = tail(head(per_locus_stats.df, n = nmarkers_to_keep), n = 1)["Fst"], lty = 2)
-dev.off()
+#dev.off()
 
-pdf(file = paste0(output.dir, "hobs_vs_fst.pdf"), width = 10, height = 5)
+#pdf(file = paste0(output.dir, "hobs_vs_fst.pdf"), width = 10, height = 5)
 plot(x = all_data.df$Fst, y = all_data.df$Hobs, ylab = "Hobs", xlab = "Fst")
 abline(v = tail(head(per_locus_stats.df, n = nmarkers_to_keep), n = 1)["Fst"], lty = 2)
-dev.off()
+#dev.off()
 
-pdf(file = paste0(output.dir, "maf_vs_hobs.pdf"), width = 10, height = 5)
+#pdf(file = paste0(output.dir, "maf_vs_hobs.pdf"), width = 10, height = 5)
 plot(x = all_data.df$Hobs, y = all_data.df$maf.vec, xlab = "Observed heterozygosity", ylab = "Minor Allele Frequency")
 abline(v = tail(head(hobs.df[hobs.df$Hobs < 0.5,], n = nmarkers_to_keep), n = 1)[2], lty = 2)
 abline(v = 0.5, lty = 2)
-dev.off()
+
+#dev.off()
+
+#save out manually as 8x8 (can't seem to output as 2x2 automatically, will try again #todo)
 
 
 #### 10. Write out Rdata
