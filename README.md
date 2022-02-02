@@ -65,6 +65,7 @@ Output will be rows of mnames and mtype, no header.
 355586_10_A, top_FST
 ```
 
+
 ### 04. Collect the whitelist marker info from VCF ###
 Obtain specific information about these markers from the larger VCF:       
 `01_scripts/02_info_from_vcf.sh`          
@@ -83,7 +84,46 @@ JH816256.1,99460,100388:26:-,G,A
 
 ```
 
-### 04. Overview ####
+
+### 05. Prepare BED file
+Use the following to prepare a bed file from the relevant lines of the vcf
+`01_scripts/03_prepare_bed_file.sh`     
+...will produce `04_extract_loci/vcf_selection.bed`
+note: this will include a fourth column that can be used for matching the output fasta back to the VCF (i.e., mname).     
+
+
+
+### 06. Extract FASTA from reference genome
+Then use the following to extract the relevant sequence from the genome
+`01_scripts/04_extract_from_reference.sh`       
+...will produce `04_extract_loci/vcf_selection.fa`        
+
+
+### 7. Bring all back together and create submission file
+Use the following rscript interactively to join the sequence data (produced from the fasta) to the marker information (produced from the VCF):        
+`05_make_submission_form.R`       
+
+This script will do the following:     
+
+...this will produce `05_submission_form/seq_and_minfo_for_submission.csv`, which contains the following:    
+1. marker name;     
+2. chromosome (scaffold);     
+3. reference allele (reference based on the reference genome)   
+4. alternate allele
+5. strand;     
+6. marker type;    
+7. priority level;     
+8. formatted sequence (...ATGC[A/G]ATGC...)     
+
+Note that the reference allele is given that designation based on the reference genome nucleotide and doesn't always indicate in that manner in the VCF. A switch will occur in the Rscript to switch these identities, if the VCF alt allele is the allele in the reference genome. 
+
+For data checking purposes, a full dataframe as generated through the Rscript process is also output as `05_submission_form/seq_and_minfo_all_data.csv`       
+
+
+#### Now the data can be submitted for marker design ####
+
+
+### Additional information on VCF formats ####
 This section is for review only, but contains some relevant information about formats.     
 To extract from the reference genome, we will use bedtools combined with a bedfile.     
 The bedfile will be in the format of:     
@@ -126,39 +166,3 @@ JH816256.1	99259	99660
 >JH816256.1:99259-99660
 TACGT....
 ```
-
-
-### 05. Extract FASTA from reference genome
-Use the following to prepare a bed file from the relevant lines of the vcf
-`01_scripts/03_prepare_bed_file.sh`     
-...will produce `04_extract_loci/vcf_selection.bed`
-note: this will include a fourth column that can be used for matching the output fasta back to the VCF (i.e., mname).     
-
-Then use the following to extract the relevant sequence from the genome
-`01_scripts/04_extract_from_reference.sh`       
-...will produce `04_extract_loci/vcf_selection.fa`        
-
-
-### 06. Bring all back together and create submission file
-Use the following rscript interactively to join the sequence data (produced from the fasta) to the marker information (produced from the VCF):        
-`05_make_submission_form.R`       
-
-This script will do the following:     
-
-...this will produce `05_submission_form/seq_and_minfo_for_submission.csv`, which contains the following:    
-1. marker name;     
-2. chromosome (scaffold);     
-3. reference allele (reference based on the reference genome)   
-4. alternate allele
-5. strand;     
-6. marker type;    
-7. priority level;     
-8. formatted sequence (...ATGC[A/G]ATGC...)     
-
-Note that the reference allele is given that designation based on the reference genome nucleotide and doesn't always indicate in that manner in the VCF. A switch will occur in the Rscript to switch these identities, if the VCF alt allele is the allele in the reference genome. 
-
-For data checking purposes, a full dataframe as generated through the Rscript process is also output as `05_submission_form/seq_and_minfo_all_data.csv`       
-
-
-#### Now the data can be submitted for marker design ####
-
