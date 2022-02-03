@@ -89,54 +89,13 @@ head(seq_and_minfo.df, n = 2)
 # Change nucleotides to all upper case
 seq_and_minfo.df$seq <- toupper(x = seq_and_minfo.df$seq)
 
-# Use loop to confirm chromosome is equal and position fits within the range
-
-# # Set nulls
-# chroi <- NULL; lower.oi <- NULL; upper.oi <- NULL; chunk.df <- NULL
-# 
-# for(i in 1:nrow(seq.df)){
-#   
-#   # Variables for this loop
-#   chroi <-    seq.df[i, "chr"]
-#   lower.oi <- seq.df[i, "lower_range"]
-#   upper.oi <- seq.df[i, "upper_range"]
-#   
-#   # Reporting, what are we looking for
-#   print(paste0("Looking for ", chroi, " within range ", lower.oi, "-", upper.oi))
-#   
-#   # Subset matching dataframe, including only rows for which the chromosome is equal
-#   chunk.df <- minfo.df[which(minfo.df$chr==chroi), ]
-#   
-#   # Then check to see if the marker with the equal chromosome ID whether the position (VCF) is also fit within the expected range (FASTA accn)
-#   for(n in 1:nrow(chunk.df)){
-#     
-#     if(chunk.df$pos[n] > lower.oi && chunk.df$pos[n] < upper.oi){
-#       
-#       mname.oi <- chunk.df[n,"mname"]
-#       seq.df$mname[i] <- mname.oi
-#       
-#     }
-#     
-#   }
-#   
-#   
-# }
-# rm(list = c("chroi", "i", "n", "lower.oi", "upper.oi", "chunk.df", "mname.oi"))
-# 
-# 
-# # Check, were all mnames retrieved? 
-# length(seq.df$mname)
-# nrow(seq.df)
-
-### Combined data ###
-# all_data <- merge(x = seq.df, y = minfo.df, by = "mname")
-
-
 
 # Separate the sequence into the first 200 bp, the variant (ref allele), then the second 200 bp 
 seq_and_minfo.df$left_seq  <- substr(x = seq_and_minfo.df$seq, start =   1, stop = 200) 
 seq_and_minfo.df$ref_nuc   <- substr(x = seq_and_minfo.df$seq, start = 201, stop = 201)
 seq_and_minfo.df$right_seq <- substr(x = seq_and_minfo.df$seq, start = 202, stop = 401)
+
+#TODO#: warning, this assumes that all POS are greater than 202 bp from the front, perhaps add a datacheck to verify this #
 
 # Add values into the constant columns
 seq_and_minfo.df$strand <- rep("NA", times = nrow(seq_and_minfo.df))
