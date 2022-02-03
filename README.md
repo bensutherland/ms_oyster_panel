@@ -100,7 +100,7 @@ Then use the following to extract the relevant sequence from the genome
 
 
 ### 7. Bring all back together and create submission file
-Use the following rscript interactively to join the sequence data (produced from the fasta) to the marker information (produced from the VCF):        
+Use the following Rscript interactively to join the sequence data (produced from the fasta) to the marker information (produced from the VCF):        
 `05_make_submission_form.R`       
 
 This script will do the following:     
