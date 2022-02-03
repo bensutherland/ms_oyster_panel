@@ -220,7 +220,8 @@ hobs_selected.df <- head(hobs_selected.df, n = nmarkers_to_keep)
 nrow(hobs_selected.df)
 
 # Save out hobs selected markers
-write.csv(x = hobs_selected.df, file = "03_marker_selection/top_hobs_markers.csv", quote = F, row.names = F)
+# write.csv(x = hobs_selected.df, file = "03_marker_selection/top_hobs_markers.csv", quote = F, row.names = F)
+## note: we use the all markers file to identify selected markers, not this file. 
 
 
 #### 7. Differentiation statistics (Fst) ####
@@ -239,7 +240,8 @@ head(per_locus_stats.df)
 dim(per_locus_stats.df)
 
 # Write out all per locus stats
-write.csv(x = per_locus_stats.df, file = "03_marker_selection/all_markers_per_locus_stats.csv", quote = F, row.names = F)
+#write.csv(x = per_locus_stats.df, file = "03_marker_selection/all_markers_per_locus_stats.csv", quote = F, row.names = F)
+## note: we use the merged file below, not this file, for marker selection
 
 # Create density plot of Fst
 pdf(file = paste0(output.dir, "fst_hist.pdf"), width = 10, height = 5)
@@ -269,6 +271,13 @@ text(x = 0.3, y = 3000
 )
 
 dev.off()
+
+# Stats
+# Lowest FST included: 
+tail(head(per_locus_stats.df, n = nmarkers_to_keep), n = 1)["Fst"]
+
+# Lowest FST included: 
+head(per_locus_stats.df, n = 1)["Fst"]
 
 
 #### 8. All per-locus statistics together ####
