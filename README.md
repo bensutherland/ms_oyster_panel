@@ -97,7 +97,7 @@ note: this will include a fourth column that can be used for matching the output
 Then use the following to extract the relevant sequence from the genome
 `01_scripts/04_extract_from_reference.sh`       
 ...will produce `04_extract_loci/vcf_selection.fa`        
-
+...and `04_extract_loci/selected_chr_and_seq.txt`, which is a tab delimited version.     
 
 ### 7. Bring all back together and create submission file
 Use the following Rscript interactively to join the sequence data (produced from the fasta) to the marker information (produced from the VCF):        
