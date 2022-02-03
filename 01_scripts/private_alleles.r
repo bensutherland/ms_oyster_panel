@@ -50,17 +50,14 @@ load(file = paste0(output.dir, "adegenet_output.RData"))
 my.data.gid
 
 # Load colours file
-my_cols.df <- read.csv(file = "00_resources/my_cols.csv", stringsAsFactors = F)
+my_cols.df <- read.csv(file = "00_archive/my_cols.csv", stringsAsFactors = F)
 #TODO: update README with correct location
 str(my_cols.df)
 
 #### 02. Private alleles
 
 # Tabulate alleles the occur in only one population. 
-private_alleles(gid = my.data.gid)
-
 global.gid <- my.data.gid
-
 
 ## Create a df that defines the strata for each individual in the rows
 strata.df <- as.data.frame(as.character(pop(global.gid)), stringsAsFactors = FALSE)
@@ -92,30 +89,24 @@ table(strata(global.gid, ~indiv.pop))
 table(strata(global.gid, ~repunit, combine = FALSE))
 table(strata(global.gid, ~repunit/indiv.pop, combine = FALSE))
 
-# Now try to use strata
-# # Tabulate alleles the occur in only one population. 
-# private_alleles(gid = my.data.gid)
-
-# find private alleles per population
-per_pop.privallele <- private_alleles(global.gid, alleles ~ indiv.pop)
+# Find private alleles
+#per_pop.privallele     <- private_alleles(global.gid, alleles ~ indiv.pop) # per population, not clear if necessary here
 per_repunit.privallele <- private_alleles(global.gid, alleles ~ repunit)
-per_repunit.privallele
 
-# Observe output object
-dim(per_repunit.privallele)
 per_repunit.privallele[,1:5]
+dim(per_repunit.privallele)
 
 # Quantify the number of observations of each private allele in each population
-# e.g.,
-table(per_repunit.privallele["BC",])
-
-# for all repunits
-for(i in 1:nrow(per_repunit.privallele)){
-  
-  print(paste0("The repunit ", rownames(per_repunit.privallele)[i], " has the following observed priv alleles"))
-  print(table(per_repunit.privallele[i, ]))
-  
-}
+# # e.g.,
+# table(per_repunit.privallele["BC",])
+# 
+# # for all repunits
+# for(i in 1:nrow(per_repunit.privallele)){
+#   
+#   print(paste0("The repunit ", rownames(per_repunit.privallele)[i], " has the following observed priv alleles"))
+#   print(table(per_repunit.privallele[i, ]))
+#   
+# }
 
 # Number of observed alleles per locus
 # private_alleles(Pinf, locus ~ Country, count.alleles = TRUE)
@@ -133,14 +124,14 @@ rowSums(pal)
 global.priv <- private_alleles(global.gid, alleles ~ repunit, report = "data.frame")
 ggplot(global.priv) + geom_tile(aes(x = population, y = allele, fill = count))
 
-#### (New Work 2022-01-31) ####
 #### Identifying and choosing markers to include ####
 per_repunit.privallele[,1:5]
-per_repunit.privallele.bck <- per_repunit.privallele  # create backup
+#per_repunit.privallele.bck <- per_repunit.privallele  # create backup
+#per_repunit.privallele <- per_repunit.privallele.bck  # retrieve backup
 
-# Remove unnecessary component of name
+# Remove the ".2" from the back of the marker name
 colnames(per_repunit.privallele)
-colnames(per_repunit.privallele) <- gsub(pattern = ".2", replacement = "", x = colnames(per_repunit.privallele))
+colnames(per_repunit.privallele) <- substr(x = colnames(per_repunit.privallele), start = 1, stop = nchar(colnames(per_repunit.privallele))-2)
 colnames(per_repunit.privallele)
 
 # Make df
@@ -173,12 +164,12 @@ write.table(x = DPB.selected.pas, file = paste0(output.dir, "DPB_selected_PA_mna
 write.table(x = GUR.selected.pas, file = paste0(output.dir, "GUR_selected_PA_mnames.csv"), quote = F, sep = ",", row.names = F, col.names = F)
 
 
-#### Extra material, thinking about MAF  ####
-table(strata.df) # note: there are 20 indiv. DPB, 22 indiv. GUR
-sum(table(strata.df)) # total = 366 indiv
-
-# How many observations needed to consider population-specific MAF
-20 * 2 * 0.05
-# How many observations needed to consider global MAF
-366 * 2 * 0.01
-# Global MAF would require > 7 observations of the allele (however, remember we have already implemented a MAF filter)
+# #### Extra material, thinking about MAF  ####
+# table(strata.df) # note: there are 20 indiv. DPB, 22 indiv. GUR
+# sum(table(strata.df)) # total = 366 indiv
+# 
+# # How many observations needed to consider population-specific MAF
+# 20 * 2 * 0.05
+# # How many observations needed to consider global MAF
+# 366 * 2 * 0.01
+# # Global MAF would require > 7 observations of the allele (however, remember we have already implemented a MAF filter)

@@ -43,7 +43,7 @@ mname,Fit,Fst,Fis,maf.vec,Hobs
 Custom markers will be included in the panel. Currently this includes markers that are private alleles for a couple of populations in culture only in British Columbia. This will use code and resources adapted from `https://github.com/bensutherland/ms_oyster_popgen`, specifically the following:     
 `00_archive/my_cols.csv`         
 `01_scripts/private_alleles.r`      
-...which have been named with the same filenames/ folders in the current repo, but updated mainly to allow output of specific marker names.    
+...which have been named with the same filenames/ folders in the current repo, but updated mainly to allow output of specific marker names.     
 
 Run `01_scripts/private_alleles.r`      
 ...this will identify mnames of high frequency private alleles from DPB and GUR populations.    
