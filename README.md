@@ -122,6 +122,9 @@ For data checking purposes, a full dataframe as generated through the Rscript pr
 
 #### Now the data can be submitted for marker design ####
 
+### Additional data checking
+To confirm that the 'top FST markers' are indeed leading to higher population-level FST estimates, use the following script interactively after running the marker selection script and this will use `03_marker_selection/adegenet_output.RData` and `04_extract_loci/selected_mnames.csv` to limit the number of markers to only those selected for high FST and calculate bootstrapped and unbootstrapped FST comparisons:     
+`01_scripts/confirm_FST.R`       
 
 ### Additional information on VCF formats ####
 This section is for review only, but contains some relevant information about formats.     
