@@ -1,19 +1,16 @@
 # Analyze multiple runs together, where the runs may contain the same individuals
 # Check consistency as well as determine the best technical replicate based on number of amplicons typed
-
 # Sutherland Bioinformatics
-# 2022-11-09
+# Initialized 2022-11-09
 
 # Source simple_pop_stats and choose Pacific oyster
 
 #### 01. Load Data ####
-# Loads a genepop to a genind obj
-load_genepop(datatype = "SNP") 
-# your data is now obj
-
-# Load both of the following, and then save as individually-named objects
+# Using the prompt below, load both of the following, and then save as individually-named objects
 #"../amplitools/03_results/R_2022_08_04_S5XL.xls_genetic_data_only_final.gen"
 #"../amplitools/03_results/R_2022_10_07_S5XL.xls_genetic_data_only_final.gen"
+
+load_genepop(datatype = "SNP") 
 
 # obj.r_2022_08_04 <- obj
 # obj.r_2022_10_07 <- obj
@@ -31,16 +28,13 @@ nLoc(obj.r_2022_10_07.common)
 
 obj <- repool(obj.r_2022_08_04.common, obj.r_2022_10_07.common)
 
+indNames(obj) # note: Run 2022_10_07 has technical replicates in the 600 and 900 series barcodes (two copies of all samples). These are also present on 2022_08_04 run. 
 
-
-
-
-
-#### Find the best individual from the multiple runs ####
+#### 01. Find the best individual from the multiple runs ####
 # Percent missing per individual
 percent_missing_by_ind(df = obj)
 
-head(missing_data.df)
+#head(missing_data.df)
 rownames(missing_data.df) <- seq(1:nrow(missing_data.df))
 head(missing_data.df)
 dim(missing_data.df)
@@ -50,69 +44,35 @@ missing_data.df <- separate(data = missing_data.df, col = "ind", into = c("run",
                             , remove = F, sep = "__")
 head(missing_data.df)
 
-# Determine which run provides more data for the individual
-# Separate out the runs
-missing_data_2022_08_04.df <- missing_data.df[missing_data.df$run=="R_2022_08_04_09_19_56_user_S5XL-00533-1089-OYR-20220729_7", ]
-missing_data_2022_10_07.df <- missing_data.df[missing_data.df$run=="R_2022_10_07_13_17_04_user_S5XL-0055-315-Oyster_1", ]
-dim(missing_data_2022_08_04.df)
-dim(missing_data_2022_10_07.df)
-head(missing_data_2022_08_04.df)
-head(missing_data_2022_10_07.df)
 
-# Merge based on indiv
-missing_data_merged.df <- merge(x = missing_data_2022_08_04.df, y = missing_data_2022_10_07.df, by = "indiv"
-                                , all = T)
-head(missing_data_merged.df)
+# Per individual, find the one with the highest typed markers
+indiv <- unique(missing_data.df$indiv)
+length(indiv) # 370 unique indivs
 
-# # These individuals were only in the first run: 
-# retain_run_1_only <- missing_data_merged.df$indiv[is.na(missing_data_merged.df$run.y)]
-# retain_run_2_only <- missing_data_merged.df$indiv[is.na(missing_data_merged.df$run.x)]
-# length(retain_run_1_only)
-# length(retain_run_2_only)
-
-# Per sample, which run has the most markers typed?  (number typed y (new) - number typed x (old))
-# head(missing_data_merged.df[!is.na(missing_data_merged.df$run.y), ])
-missing_data_merged.df$new_minus_old <- missing_data_merged.df$ind.num.typed.y - missing_data_merged.df$ind.num.typed.x
-missing_data_merged.df[200:210,]
-
-missing_data_merged.df$keep <- "NA"
-
-for(i in 1:nrow(missing_data_merged.df)){
+ioi <- NULL; slice <- NULL; keep.vec <- NULL; keep <- NULL
+for(i in 1:length(indiv)){
   
-  # If the line does not involve an NA value
-  if(!is.na(missing_data_merged.df$new_minus_old[i])){
+  # select indiv
+  ioi <- indiv[i]
+  slice <- missing_data.df[missing_data.df$indiv==ioi, ]
+  
+  # Put in descending order of ind.num.typed
+  slice <- slice[order(slice$ind.num.typed, decreasing = TRUE), ]
+  
+  # Identify the best ind to keep (the top row)
+  keep <- slice[1,"ind"]
+  
+  keep.vec <- c(keep.vec, keep)
     
-    # If the new run has more typed markers than the old
-    if(missing_data_merged.df$new_minus_old[i] >= 0){
-      
-      missing_data_merged.df$keep[i] <- "new"
-      
-    # If the old run has more typed markers than the new
-    }else if(missing_data_merged.df$new_minus_old[i] < 0){
-      
-      missing_data_merged.df$keep[i] <- "old"
-      
-    }
-    
-  # If the line has an NA, the new typed data is missing (known assumption)
-  }else if(is.na(missing_data_merged.df$new_minus_old[i])){
-    
-    missing_data_merged.df$keep[i] <- "old"
-    
-  }
   
 }
 
-head(missing_data_merged.df)
-missing_data_merged.df[200:210,]
+keep.vec
 
-# Which samples are to be kept from the original run? 
-run_2022_08_04.keep <- missing_data_merged.df[missing_data_merged.df$keep=="old", "ind.x"]
-run_2022_10_07.keep <- missing_data_merged.df[missing_data_merged.df$keep=="new", "ind.y"]
-length(run_2022_08_04.keep)
-length(run_2022_10_07.keep)
+# Retain only the best from the obj
+obj
 
-keep <- c(run_2022_08_04.keep, run_2022_10_07.keep)
+
 obj.best <- obj[i=keep]
 pop(obj.best) <- rep("unkn", times = nInd(obj.best))
 obj.best
