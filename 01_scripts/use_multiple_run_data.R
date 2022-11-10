@@ -4,8 +4,9 @@
 # Initialized 2022-11-09
 
 # Source simple_pop_stats and choose Pacific oyster
+options(scipen = 999999999)
 
-#### 01. Load Data ####
+#### 00. Load Data ####
 # Using the prompt below, load both of the following, and then save as individually-named objects
 #"../amplitools/03_results/R_2022_08_04_S5XL.xls_genetic_data_only_final.gen"
 #"../amplitools/03_results/R_2022_10_07_S5XL.xls_genetic_data_only_final.gen"
@@ -63,30 +64,29 @@ for(i in 1:length(indiv)){
   keep <- slice[1,"ind"]
   
   keep.vec <- c(keep.vec, keep)
-    
   
 }
 
 keep.vec
 
 # Retain only the best from the obj
-obj
+obj.best <- obj[i=keep.vec]
 
-
-obj.best <- obj[i=keep]
+# Clear the population attribute
 pop(obj.best) <- rep("unkn", times = nInd(obj.best))
 obj.best
 
 # These are the ind names
 indNames(obj.best)
+# obj.best can now be used as an input to "simple_pop_stats_Cgig_analysis_2022-09-12.R"
 
 
-#### COMPARE GENOS ####
-obj
+
+#### 02. Compare technical replicates within the run ####
+# Here we will use only the 2022_10_07 data, as this has the best technical replicates included
 obj.r_2022_10_07
 
-# Choose
-obj.df <- genind2df(obj)
+# Convert to a df
 obj.df <- genind2df(obj.r_2022_10_07)
 
 obj.df[1:5, 1:5]
@@ -94,42 +94,41 @@ colnames(obj.df)
 obj.df$indiv <- rownames(obj.df)
 obj.df[1:5, 577:587]
 
-# Which samples have data from each run
-#colnames(missing_data_merged.df)
-#indiv_w_data_in_both <- missing_data_merged.df[!is.na(missing_data_merged.df$run.x) & !is.na(missing_data_merged.df$run.y), "indiv"]
-
-#indiv_w_data_in_both[1]
-#obj.df$indiv
-
+# Separate the indiv ID into components
 obj.df <- separate(data = obj.df, col = "indiv", into = c("run", "barcode", "indiv"), sep = "__", remove = F)
 table(obj.df$indiv) # note that all samples have two entries, this is the 600-level and 900-level barcode
-tech_rep_indivs <- dimnames(table(obj.df$indiv)==2)[[1]]
+
+# Identify the indiv IDs that have a technical replicate present
+tech_rep_indivs <- dimnames(table(obj.df$indiv)==2)[[1]] 
 
 
-### Testing out the theory for the loop ###
-test <- obj.df[obj.df$indiv=="BR1.12-A", ]
-dim(test)
-test[1:2, 1:10]
+# ### Testing out the theory for the loop ###
+# test <- obj.df[obj.df$indiv=="BR1.12-A", ]
+# dim(test)
+# test[1:2, 1:10]
+# 
+# table(test[1,]==test[2,]) # Note that this ignores any instances of NAs
+# 
+# # Match
+# test[,"96509"]
+# test[1,"96509"]==test[2,"96509"]
+# 
+# # Different genotype (het vs. homo alt)
+# test[,"714071"]
+# test[1,"714071"]==test[2,"714071"]
+# 
+# # No data
+# test[,"395635"]
+# test[1,"395635"]==test[2,"395635"] # If both entries are NA, the result will be NA
+# 
+# # Data for only one replicate
+# test[,"100388"]
+# test[1,"100388"]==test[2,"100388"] # If one of the entries are NA, the result is an NA
+# 
+# ### /END/ Testing out the theory for the loop ###
 
-table(test[1,]==test[2,]) # Note that this ignores any instances of NAs
 
-test[,"96509"]
-test[1,"96509"]==test[2,"96509"]
-
-test[,"714071"]
-test[1,"714071"]==test[2,"714071"]
-
-test[,"395635"]
-test[1,"395635"]==test[2,"395635"] # If both entries are NA, the result will be NA
-
-test[,"100388"]
-test[1,"100388"]==test[2,"100388"] # If one of the entries are NA, the result is an NA
-
-#test <- obj.df[obj.df$indiv==indiv_w_data_in_both[1], ]
-dim(test)
-
-### /END/ Testing out the theory for the loop ###
-
+# Loop to count matching genotypes per marker per individual
 soi <- NULL; slice <- NULL; result.list <- list(); all_result.df <- NULL; 
 num_false <- NULL; num_true <- NULL; percent_true <- NULL; num_typed_in_both <- NULL
 
@@ -137,29 +136,28 @@ for(i in 1:length(tech_rep_indivs)){
   
   print(i)
   
+  # Identify the sample of interest
   soi <- tech_rep_indivs[i]
   
+  # Obtain the data for the sample of interest
   slice <- obj.df[obj.df$indiv==soi, ]
   slice <- slice[grep(pattern = "run|barcode|indiv|pop", x = colnames(slice), invert = T)] # exclude those cols
-  # dim(slice)
-  # slice[, 1:5]
-  # slice[, 580:585]
-  
+
   # Does the first sample geno equal the second sample geno?
   num_false <- table(slice[1,]==slice[2,])[1]
   num_true <- table(slice[1,]==slice[2,])[2]
   
   # What is the percentage? 
   num_typed_in_both <- (num_true + num_false)
-  percent_true <- num_false / num_typed_in_both
-  
+  percent_match <- num_true / num_typed_in_both
   
   # Make the result into a dataframe and give the column name as the sample of interest
-  result.df <- as.data.frame(c(num_false, num_true, percent_true, num_typed_in_both))
+  result.df <- as.data.frame(c(num_false, num_true, percent_match, num_typed_in_both))
   colnames(result.df) <- soi
   
-  rownames(result.df) <- c("num_false", "num_true", "percent_true", "num_typed_in_both")
+  rownames(result.df) <- c("num_false", "num_true", "percent_match", "num_typed_in_both")
   
+  # Build the output df
   if(i==1){
     
     all_result.df <- result.df
@@ -169,15 +167,23 @@ for(i in 1:length(tech_rep_indivs)){
     all_result.df <- cbind(all_result.df, result.df)
       
   }
-  
 }
 
 
-all_result.df <- round(x = all_result.df, digits = 3)
-#all_result.df[1:2, ] <- round(x = all_result.df[1:2,], digits = 0)
-all_result.df
+all_result.df <- t(all_result.df)
+head(all_result.df)
+all_result.df <- as.data.frame(all_result.df)
+str(all_result.df)
+
+pdf(file = "03_results/matched_genos.pdf", width = 7, height = 5)
+plot(x = all_result.df$num_typed_in_both, y = all_result.df$percent_match, ylim = c(0,1)
+     , ylab = "Percentage of matching genotypes"
+     , xlab = "Number loci typed in both technical replicates")
+# summary(all_result.df$percent_match)["Mean"]
+# mean(all_result.df$percent_match, na.rm = T)
+
+med.match <- median(all_result.df$percent_match, na.rm = T)
+text(paste0("median = ", round(med.match, digits = 3)), x = 400, y = 0.4)
+dev.off()
 
 write_delim(x = all_result.df, file = "03_results/matched_genos.txt", delim = "\t")
-
-
-
