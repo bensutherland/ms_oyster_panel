@@ -1,11 +1,12 @@
+# Main genetic analysis script for the pilot study
 # Sutherland Bioinformatics
-# 2022-09-18
+# Initialized 2022-09-18
 
 # Source simple_pop_stats and choose Pacific oyster
 
 #### 01. Load Data ####
 # Loads a genepop to a genind obj
-load_genepop(datatype = "SNP") 
+#load_genepop(datatype = "SNP") 
 # your data is now obj
 
 # If you are using data consolidated from multiple technical replicates and runs, use '01_scripts/use_multiple_run_data.R' here, then bring the output obj back
@@ -17,7 +18,30 @@ load_genepop(datatype = "SNP")
 indiv <- indNames(obj)
 indiv.df <- as.data.frame(indiv)
 head(indiv.df)
+
+# Separate constituent parts of indiv ID, as these are no longer needed (run, barcode, sample)
+indiv.df <- separate(data = indiv.df, col = "indiv", into = c("run", "barcode", "indiv"), sep = "__", remove = T)
+head(indiv.df)
+
+indNames(obj) <- indiv.df$indiv
+
+# # Confirm
+# test.df <- as.data.frame(indNames(obj.best))
+# test.df <- separate(data = test.df, col = "indNames(obj.best)", into = c("run", "barcode", "indiv"), sep = "__", remove = T)
+# table(test.df$indiv==indNames(obj))
+
+# How many from each run? 
+table(indiv.df$run)
+
+# Keep only necessary column
+indiv.df <- indiv.df[, "indiv"]
+indiv.df <- as.data.frame(indiv.df)
+colnames(indiv.df) <- "indiv"
+head(indiv.df)
+
+# Add dummy column to fill manually
 indiv.df$pop <- NA
+
 write.table(x = indiv.df, file = "02_input_data/my_data_ind-to-pop.txt"
             , sep = "\t", col.names = T, row.names = F
             , quote = F
@@ -31,21 +55,18 @@ indiv_annot.df <- read.table(file = "02_input_data/my_data_ind-to-pop_annot.txt"
                            )
 
 ## Update population names
-# Gather indiv names again, as above
-indiv <- indNames(obj)
-indiv.df <- as.data.frame(indiv)
-head(indiv.df)
-
 # Merge with the population annotation, do not sort
 indiv_annot_in_order.df <- merge(x = indiv.df, indiv_annot.df, by = "indiv"
-                                 , all.x = T, sort = FALSE
+                                 , all.x = T, sort = FALSE # very necessary line
                                  )
+
+head(indiv_annot_in_order.df)
 
 # Observe order remained same as (x) above
 head(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
 tail(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
 
-pop(obj) <- indiv_annot_in_order.df$pop
+pop(obj) <- indiv_annot_in_order.df$pop.y
 unique(pop(obj))
 
 characterize_genepop(obj)
@@ -68,12 +89,15 @@ pops_in_genepop.df <- as.data.frame(pops_in_genepop)
 destfile <- "00_archive/my_cols.csv"
 # download.file(url, destfile)   # only need to run once
 my_colours <- read.csv(destfile)
-# TODO: Could add missing population rows here
+new_pop_colours <- matrix(c("VIU_offspring", "VIU_parent", "red", "pink"), nrow = 2, ncol = 2)
+colnames(new_pop_colours) <- c("my.pops", "my.cols")
+my_colours <- rbind(my_colours, new_pop_colours)
 
 # Connect colours to empirical populations
-colours <- merge(x = pops_in_genepop.df, y =  my_colours, by.x = "pops_in_genepop", by.y = "my.pops", sort = F, all.x = T)
-colours[colours$pops_in_genepop=="VIU_offspring", "my.cols"] <- "red" # Annotate those pops not present in the original colours list
-colours[colours$pops_in_genepop=="VIU_parent", "my.cols"] <- "pink"
+colours <- merge(x = pops_in_genepop.df, y =  my_colours, by.x = "pops_in_genepop", by.y = "my.pops"
+                 #, sort = F
+                 , all.x = T
+                 )
 colours
 
 
