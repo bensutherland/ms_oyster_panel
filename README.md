@@ -169,3 +169,13 @@ JH816256.1	99259	99660
 >JH816256.1:99259-99660
 TACGT....
 ```
+
+## Additional Analyses for Pilot Study
+Use the script `01_scripts/use_multiple_run_data.R` to analyze data from the two different runs that were sequenced as part of the pilot study. This script will allow you to choose the best technical replicate (i.e., the one with the most typed markers) and combine into a single genind file for analysis. It will also evaluate technical replicates within a sequencing run.        
+Once the best individual per technical reps is identified, move to `01_scripts/simple_pop_stats_Cgig_analysis_*.R`, which will allow you to analyze the data (requires the [simple_pop_stats](https://github.com/bensutherland/simple_pop_stats) repo).     
+
+
+
+
+
+
