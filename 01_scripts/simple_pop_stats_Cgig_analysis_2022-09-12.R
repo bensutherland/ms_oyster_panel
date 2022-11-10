@@ -155,10 +155,13 @@ legend("bottomleft", legend = unique(plot_cols.df$pop)
        )
 dev.off()
 
+# Temporary fix
+obj.df <- missing_data.df
+head(obj.df)
 
 ## Filter individuals
 # Keep inds with 70% genotyping rate (% missing < 0.3)
-keep <- rownames(obj.df[obj.df$ind.per.missing < 0.3, ])
+keep <- obj.df[obj.df$ind.per.missing < 0.5, "ind"]
 
 length(keep)
 nInd(obj)
@@ -180,30 +183,32 @@ str(obj.df)
 obj.df <- as.data.frame(obj.df)
 dim(obj.df)
 str(obj.df)
-obj.df[1:5,1:5]
-obj.df[585:590,290:295]
+obj.df[1:5,1:5] # See top left of file
+obj.df[(dim(obj.df)[1]-5):dim(obj.df)[1], (dim(obj.df)[2]-5):dim(obj.df)[2]] # See bottom right of file
 
 # Add collector col
 obj.df$marker.per.missing <- NA
 
 for(i in 1:(nrow(obj.df))){
   
-  # Per marker                      sum all NAs for th emarker, divide by total number markers (#TODO: Confirm or find better method)
+  # Per marker                      sum all NAs for the marker, divide by total number markers (#TODO: Confirm or find better method)
   obj.df$marker.per.missing[i] <- ( sum(is.na(obj.df[i,])) / (ncol(obj.df)) )
   
 }
 
+head(obj.df$marker.per.missing)
+table(is.na(obj.df[2,]))
 
 # Plot
-pdf(file = "03_results/missing_data_by_marker.pdf", width = 5, height = 4)
-plot(obj.df$marker.per.missing, xlab = "Marker index", ylab = "Proportion missing data", las = 1)
-abline(h = 0.3
+pdf(file = "03_results/geno_rate_by_marker.pdf", width = 5, height = 4)
+plot(1- obj.df$marker.per.missing, xlab = "Marker index", ylab = "Genotyping rate", las = 1)
+abline(h = 0.5
        #, col = "grey60"
        , lty = 3, )
 dev.off()
 
 # Filter
-keep <- rownames(obj.df[obj.df$marker.per.missing < 0.3, ])
+keep <- rownames(obj.df[obj.df$marker.per.missing < 0.5, ])
 
 # How many loci were removed? 
 nLoc(obj.filt) - length(keep)
@@ -214,8 +219,11 @@ obj.all.filt <- obj.filt[, loc=keep]
 # Rename back to obj
 obj <- obj.all.filt
 
+##### 03.3 Drop monomorphic loci #####
+drop_loci(drop_monomorphic = TRUE)
+obj <- obj_filt
 
-##### 03.3 Post-missing data filter #####
+##### 03.4 Post-QC data filter #####
 obj
 
 ## View the ind or loc names
@@ -230,10 +238,6 @@ write.table(x = inds, file = "03_results/retained_individuals.txt", sep = "\t", 
 write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote = F
             , row.names = F, col.names = F
 )
-
-##### 03.4 Drop monomorphic loci #####
-drop_loci(drop_monomorphic = TRUE)
-obj <- obj_filt
 
 
 ##### 03.5 per marker stats and filters #####
