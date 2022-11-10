@@ -103,6 +103,9 @@ colours
 
 #### 03. Characterize missing data (indiv and loci) and filter ####
 ##### 03.1 Individuals - missing data #####
+percent_missing_by_ind(df = obj)
+head(missing_data.df)
+
 # # Find missing data per individual
 # obj.df <- genind2df(obj)
 # #str(obj.df)
@@ -125,25 +128,30 @@ colours
 # obj.df[1:5, c(1:2, 585:592)]
 # obj.df[365:370, c(1:2, 585:592)]
 
+missing_data.df <- merge(x = missing_data.df, y = indiv_annot.df, by.x = "ind", by.y = "indiv", all.x = T)
+head(missing_data.df)
+
 # Combine colours to dataframe for plotting, don't sort
 colours
-plot_cols.df <- merge(x = obj.df, y = colours, by.x = "pop", by.y = "pops_in_genepop", all.x = T
+plot_cols.df <- merge(x = missing_data.df, y = colours, by.x = "pop", by.y = "pops_in_genepop", all.x = T
                       , sort = F
                       )
 cols <- plot_cols.df$my.cols
 
 # Plot missing data by individual
-pdf(file = "03_results/missing_data_percent_by_ind.pdf", width = 8, height = 5)
-plot(obj.df$ind.per.missing, ylab = "Percent missing by individual"
+pdf(file = "03_results/geno_rate_by_ind.pdf", width = 8, height = 5)
+plot(1- missing_data.df$ind.per.missing, ylab = "Genotyping percentage"
      , col = cols
      , las = 1
+     , xlab = "Individual"
+     , ylim = c(0,1)
      )
 
-abline(h = 0.3, lty = 3)
+abline(h = 0.5, lty = 3)
 
-legend("topright", legend = unique(plot_cols.df$pop)
+legend("bottomleft", legend = unique(plot_cols.df$pop)
        , fill = unique(plot_cols.df$my.cols)
-       , cex = 0.7
+       , cex = 1.0
        )
 dev.off()
 
