@@ -136,12 +136,11 @@ colours
 plot_cols.df <- merge(x = missing_data.df, y = colours, by.x = "pop", by.y = "pops_in_genepop", all.x = T
                       , sort = F
                       )
-cols <- plot_cols.df$my.cols
 
 # Plot missing data by individual
 pdf(file = "03_results/geno_rate_by_ind.pdf", width = 8, height = 5)
-plot(1- missing_data.df$ind.per.missing, ylab = "Genotyping percentage"
-     , col = cols
+plot(1 - plot_cols.df$ind.per.missing, ylab = "Genotyping percentage"
+     , col = plot_cols.df$my.cols
      , las = 1
      , xlab = "Individual"
      , ylim = c(0,1)
@@ -152,6 +151,7 @@ abline(h = 0.5, lty = 3)
 legend("bottomleft", legend = unique(plot_cols.df$pop)
        , fill = unique(plot_cols.df$my.cols)
        , cex = 1.0
+       , bg = "white"
        )
 dev.off()
 
@@ -243,40 +243,35 @@ write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote =
 ##### 03.5 per marker stats and filters #####
 ## Per locus statistics
 per_locus_stats(data = obj)
-# note: this writes out to "per_locus_stats*.txt"
+head(per_loc_stats.df)
 
-# # per-locus heterozygosity (obs)
-# obj.summary <- summary(obj)
-# str(obj.summary)
-# 
-# pdf(file = "per_locus_Hobs.pdf", width = 6, height = 5)
-# plot(obj.summary[["Hobs"]]
-#      , xlab = "Marker (index)"
-#      , ylab = "Observed Heterozygosity"
-#        )
-# abline(h = 0.5, lty = 3)
-# dev.off()
-# 
+pdf(file = "per_locus_Hobs.pdf", width = 6, height = 5) 
+plot(x = per_loc_stats.df$Hobs
+     , xlab = "Marker (index)"
+     , ylab = "Observed Heterozygosity (Hobs)"
+     , las = 1
+     )
+
+abline(h = 0.5, lty = 3)
+dev.off()
+
+## Optional for dropping Hobs > 0.5 markers ## 
 # # Which markers are greater than 0.5 heterozygosity? 
-# hobs.outliers <- names(obj.summary[["Hobs"]][obj.summary[["Hobs"]] > 0.5])
-# hobs.outliers
-# 
 # keep <- setdiff(x = locNames(obj), y = hobs.outliers)
-# 
 # # Drop Hobs > 0.5 loci from genind
 # obj <- obj[, loc=keep]
 # obj
+## /end/ Optional for dropping ##
 
-## Hardy-weinberg
+## Hardy-Weinberg
 hwe_eval(data = obj, alpha = 0.01)
 # writes out as HWE_result_alpha_0.01.txt
-#TODO: The above Hobs and HWE filters have not been applied to the data yet 
 
 
 ##### 03.5 Post-all filters #####
 characterize_genepop(df = obj, N = 30)
 
-# Save out colours
+# Save out colours to be used downstream
 colours
 colnames(x = colours) <- c("collection", "colour")
 write.csv(x = colours, file = "00_archive/formatted_cols.csv", quote = F, row.names = F)
@@ -287,29 +282,29 @@ write.csv(x = colours, file = "00_archive/formatted_cols.csv", quote = F, row.na
 # PCA from genind
 pca_from_genind(data = obj, PCs_ret = 4, colour_file = "00_archive/formatted_cols.csv")
 
+# DAPC from genind
 dapc_from_genind(data = obj, plot_allele_loadings = TRUE, colour_file = "00_archive/formatted_cols.csv")
 
 ## Dendrogram
 make_tree(bootstrap = TRUE, boot_obj = obj, nboots = 10000, dist_metric = "edwards.dist", separated = FALSE)
 
 ## Genetic differentiation
-#calculate_FST(format = "genind", dat = obj, separated = FALSE)
 calculate_FST(format = "genind", dat = obj, separated = FALSE, bootstrap = TRUE)
 
 ## Private alleles
 regional_obj <- obj
 
-# Group common pops to get regional private alleles
+# Combine related pops to query private alleles at regional level
 unique(pop(regional_obj))
-pop(regional_obj) <- gsub(pattern = "VIU_offspring|VIU_parent", replacement = "VIU", x = pop(regional_obj))
-pop(regional_obj) <- gsub(pattern = "PEN|FRA|JPN", replacement = "JPN", x = pop(regional_obj))
+pop(regional_obj) <- gsub(pattern = "VIU_offspring|VIU_parent", replacement = "VIU", x = pop(regional_obj)) # combine VIU
+pop(regional_obj) <- gsub(pattern = "PEN|FRA|JPN", replacement = "JPN", x = pop(regional_obj))              # combine JPN lineage
 unique(pop(regional_obj))
 
 pa <- private_alleles(gid = regional_obj)
 write.csv(x = pa, file = "03_results/private_alleles.csv", quote = F)
 
 
-#### Convert genepop to Rubias format
+####### Convert genepop to Rubias format #####
 # Need to create a stock code file, in the form of
 # in the tab-delim format of: 
 #collection	repunit
@@ -323,37 +318,41 @@ write_delim(x = stock_code.df, file = "00_archive/stock_code.txt", delim = "\t",
 micro_stock_code.FN <- "00_archive/stock_code.txt"
 # this is for annotate_rubias(), for an unknown reason it requires the name micro_stock_code.FN
 
+## Convert genepop to rubias
+obj # the current analysis object
 
-sample_to_pop_interp.FN <- "02_input_data/my_data_ind-to-pop_annot.txt"
+## If running manually, here are the arguments needed
+#sample_type <- "reference"
+#data <- obj
 
+genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN)
 
-### TODO: test out the code updates below
-genepop_to_rubias_SNP()
-# May need some adapting because of pop names and indiv names diff from expected for the pipeline
-# Completed 2022-09-19
+# Using this output, move to "01_scripts/ckmr_from_rubias.R"
 
-full_sim(rubias_base.FN = "03_results/rubias_output_SNP.txt", num_sim_indiv = 200, sim_reps = 100)
+## Simulations
+# full_sim(rubias_base.FN = "03_results/rubias_output_SNP.txt", num_sim_indiv = 200, sim_reps = 100)
 
-# Estimating inbreeding (from adegenet tutorial)
-obj_PEN <- seppop(x = obj)$PEN
-obj_VIU_parent <- seppop(x = obj)$VIU_parent
-obj_VIU_offspring <- seppop(x = obj)$VIU_offspring
-obj_DPB <- seppop(x = obj)$DPB
-
-# compute the mean inbreeding for each individual and plot
-#temp <- inbreeding(x = obj_PEN, N = 100)
-#temp <- inbreeding(x = obj_VIU_parent, N = 100)
-#temp <- inbreeding(x = obj_VIU_offspring, N = 100)
-temp <- inbreeding(x = obj_DPB, N = 100)
-
-class(temp)
-head(names(temp))
-temp[[1]] # temp is a list of values sampled from the likelihood distribution of each individual; means values are obtained for all indiv using sapply
-Fbar <- sapply(temp, mean)
-hist(Fbar, col = "firebrick", main = "Average inbreeding in Pendrell")
-hist(Fbar, col = "firebrick", main = "Average inbreeding in VIU parents")
-hist(Fbar, col = "firebrick", main = "Average inbreeding in VIU offspring")
-hist(Fbar, col = "firebrick", main = "Average inbreeding in DPB")
+## Inbreeding
+# # Estimating inbreeding (from adegenet tutorial)
+# obj_PEN <- seppop(x = obj)$PEN
+# obj_VIU_parent <- seppop(x = obj)$VIU_parent
+# obj_VIU_offspring <- seppop(x = obj)$VIU_offspring
+# obj_DPB <- seppop(x = obj)$DPB
+# 
+# # compute the mean inbreeding for each individual and plot
+# #temp <- inbreeding(x = obj_PEN, N = 100)
+# #temp <- inbreeding(x = obj_VIU_parent, N = 100)
+# #temp <- inbreeding(x = obj_VIU_offspring, N = 100)
+# temp <- inbreeding(x = obj_DPB, N = 100)
+# 
+# class(temp)
+# head(names(temp))
+# temp[[1]] # temp is a list of values sampled from the likelihood distribution of each individual; means values are obtained for all indiv using sapply
+# Fbar <- sapply(temp, mean)
+# hist(Fbar, col = "firebrick", main = "Average inbreeding in Pendrell")
+# hist(Fbar, col = "firebrick", main = "Average inbreeding in VIU parents")
+# hist(Fbar, col = "firebrick", main = "Average inbreeding in VIU offspring")
+# hist(Fbar, col = "firebrick", main = "Average inbreeding in DPB")
 
 
 ## Per sample heterozygosity
@@ -362,9 +361,6 @@ hist(Fbar, col = "firebrick", main = "Average inbreeding in DPB")
 #rubias_to_vcf() # write out, then use instructions here to get per individual heterozygosity in vcftools
 # https://github.com/bensutherland/ms_oyster_popgen/blob/master/01_scripts/heterozygosity.sh
 # per population heterozygosity
-
-
-
 
 
 # related would be good to run after here
