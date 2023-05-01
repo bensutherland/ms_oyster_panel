@@ -188,8 +188,8 @@ for(i in 1:(nrow(obj.df))){
 
 
 # Plot
-pdf(file = "03_results/geno_rate_by_marker.pdf", width = 5, height = 4)
-plot(100 * (1- obj.df$marker.per.missing), xlab = "Marker index", ylab = "Genotyping rate (%)", las = 1
+pdf(file = "03_results/geno_rate_by_marker.pdf", width = 8, height = 5)
+plot(100 * (1- obj.df$marker.per.missing), xlab = "Marker", ylab = "Genotyping rate (%)", las = 1
      , ylim = c(0,100)
      , pch = 16
      , cex = 0.85
@@ -240,9 +240,9 @@ write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote =
 per_locus_stats(data = obj)
 head(per_loc_stats.df)
 
-pdf(file = "per_locus_Hobs.pdf", width = 6, height = 5) 
+pdf(file = "per_locus_Hobs.pdf", width = 8, height = 5) 
 plot(x = per_loc_stats.df$Hobs
-     , xlab = "Marker (index)"
+     , xlab = "Marker"
      , ylab = "Observed Heterozygosity (Hobs)"
      , las = 1
      , pch = 16
@@ -299,28 +299,28 @@ unique(pop(regional_obj))
 pa <- private_alleles(gid = regional_obj)
 write.csv(x = pa, file = "03_results/private_alleles.csv", quote = F)
 
+save.image(file = "03_results/post-filters_genind_and_enviro.RData")
+
 
 ####### Convert genepop to Rubias format #####
-# Need to create a stock code file, in the form of
-# in the tab-delim format of: 
-#collection	repunit
-#12Mile_Creek	GoA
+# Need to create a tab-delim stock code file in format of e.g., 
+## row 1: collection	repunit
+## row 2: boundary_bay	lower_mainland
 
+# Here we will just create a df based on existing populations where collection = repunit
 stock_code.df <- as.data.frame(unique(pop(obj)))
 colnames(stock_code.df) <- "collection"
 stock_code.df$repunit <- stock_code.df$collection
 stock_code.df
+
+# Write it out
 write_delim(x = stock_code.df, file = "00_archive/stock_code.txt", delim = "\t", col_names = T)
 micro_stock_code.FN <- "00_archive/stock_code.txt"
 # this is for annotate_rubias(), for an unknown reason it requires the name micro_stock_code.FN
 
 ## Convert genepop to rubias
+datatype <- "SNP" # required for genepop_to_rubias_SNP
 obj # the current analysis object
-
-## If running manually, here are the arguments needed
-#sample_type <- "reference"
-#data <- obj
-
 genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN)
 
 # Using this output, move to "01_scripts/ckmr_from_rubias.R"
