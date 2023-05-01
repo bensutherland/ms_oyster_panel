@@ -3,15 +3,18 @@
 # Initialized 2022-09-18
 
 # Source simple_pop_stats and choose Pacific oyster
+# Note: if already have run comp_tech_reps then do not clear and re-source, just use obj_nr_best
+
 
 #### 01. Load Data ####
 # Loads a genepop to a genind obj
 #load_genepop(datatype = "SNP") 
 # your data is now obj
 
-# If you are using data consolidated from multiple technical replicates and runs, use '01_scripts/use_multiple_run_data.R' here, then bring the output obj back
-#obj.best
-#obj <- obj.best
+# If you are using data consolidated from multiple technical replicates, use obj_nr_best
+obj <- obj_nr_best
+obj
+
 
 #### 02. Prepare Data ####
 ## Create a list of individuals for manual addition of population
@@ -23,17 +26,14 @@ head(indiv.df)
 indiv.df <- separate(data = indiv.df, col = "indiv", into = c("run", "barcode", "indiv"), sep = "__", remove = T)
 head(indiv.df)
 
+# Use reduced indiv name as indname in genind
 indNames(obj) <- indiv.df$indiv
 
-# # Confirm
-# test.df <- as.data.frame(indNames(obj.best))
-# test.df <- separate(data = test.df, col = "indNames(obj.best)", into = c("run", "barcode", "indiv"), sep = "__", remove = T)
-# table(test.df$indiv==indNames(obj))
-
-# How many from each run? 
+## Additional uses of the indiv.df df
+# Determine how many indiv came from each run
 table(indiv.df$run)
 
-# Keep only necessary column
+# Clean-up for write-out
 indiv.df <- indiv.df[, "indiv"]
 indiv.df <- as.data.frame(indiv.df)
 colnames(indiv.df) <- "indiv"
@@ -42,12 +42,14 @@ head(indiv.df)
 # Add dummy column to fill manually
 indiv.df$pop <- NA
 
+# Write out empty file to provide pop names
 write.table(x = indiv.df, file = "02_input_data/my_data_ind-to-pop.txt"
             , sep = "\t", col.names = T, row.names = F
             , quote = F
             )
 
 # Manually annotate the output file above and populate it with your pop names (no spaces)
+
 # Save as below (tab-delimited) and load
 indiv_annot.df <- read.table(file = "02_input_data/my_data_ind-to-pop_annot.txt"
                            , header = T, sep = "\t"
@@ -66,10 +68,12 @@ head(indiv_annot_in_order.df)
 head(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
 tail(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
 
-pop(obj) <- indiv_annot_in_order.df$pop.y
-unique(pop(obj))
+### TODO: add data-check in this step (see ASIDE below) ###
 
-characterize_genepop(obj)
+pop(obj) <- indiv_annot_in_order.df$pop.y
+table((pop(obj)))
+
+#characterize_genepop(obj)
 
 # ## ASIDE ##
 # # Write a little test to be sure
@@ -92,13 +96,16 @@ my_colours <- read.csv(destfile)
 new_pop_colours <- matrix(c("VIU_offspring", "VIU_parent", "red", "pink"), nrow = 2, ncol = 2)
 colnames(new_pop_colours) <- c("my.pops", "my.cols")
 my_colours <- rbind(my_colours, new_pop_colours)
+my_colours
 
-# Connect colours to empirical populations
+# Connect colours to empirical populations, which will exclude any that are not in the dataset
 colours <- merge(x = pops_in_genepop.df, y =  my_colours, by.x = "pops_in_genepop", by.y = "my.pops"
                  #, sort = F
                  , all.x = T
                  )
 colours
+rm(my_colours)
+rm(new_pop_colours)
 
 
 #### 03. Characterize missing data (indiv and loci) and filter ####
@@ -130,6 +137,7 @@ head(missing_data.df)
 
 missing_data.df <- merge(x = missing_data.df, y = indiv_annot.df, by.x = "ind", by.y = "indiv", all.x = T)
 head(missing_data.df)
+head(indiv_annot.df)
 
 # Combine colours to dataframe for plotting, don't sort
 colours
@@ -139,14 +147,14 @@ plot_cols.df <- merge(x = missing_data.df, y = colours, by.x = "pop", by.y = "po
 
 # Plot missing data by individual
 pdf(file = "03_results/geno_rate_by_ind.pdf", width = 8, height = 5)
-plot(1 - plot_cols.df$ind.per.missing, ylab = "Genotyping percentage"
+plot(100 * (1 - plot_cols.df$ind.per.missing), ylab = "Genotyping rate (%)"
      , col = plot_cols.df$my.cols
      , las = 1
      , xlab = "Individual"
-     , ylim = c(0,1)
+     , ylim = c(0,100)
      )
 
-abline(h = 0.5, lty = 3)
+abline(h = 50, lty = 3)
 
 legend("bottomleft", legend = unique(plot_cols.df$pop)
        , fill = unique(plot_cols.df$my.cols)
@@ -155,12 +163,11 @@ legend("bottomleft", legend = unique(plot_cols.df$pop)
        )
 dev.off()
 
-# Temporary fix
+# Keep missing data info on retained indiv
 obj.df <- missing_data.df
 head(obj.df)
 
-## Filter individuals
-# Keep inds with 70% genotyping rate (% missing < 0.3)
+## Filter individuals by genotyping rate 
 keep <- obj.df[obj.df$ind.per.missing < 0.5, "ind"]
 
 length(keep)
@@ -168,9 +175,12 @@ nInd(obj)
 
 obj.filt <- obj[(keep)]
 obj.filt
+table(pop(obj.filt))
+
 
 ##### 03.2 Loci - missing data #####
 # Filter loci based on missing data
+### TODO: this should be generalized into sps ###
 obj.df <- genind2df(obj.filt)
 obj.df[1:5,1:5]
 obj.df <- t(obj.df)
@@ -191,18 +201,18 @@ obj.df$marker.per.missing <- NA
 
 for(i in 1:(nrow(obj.df))){
   
-  # Per marker                      sum all NAs for the marker, divide by total number markers (#TODO: Confirm or find better method)
-  obj.df$marker.per.missing[i] <- ( sum(is.na(obj.df[i,])) / (ncol(obj.df)) )
+  # Per marker                      sum all NAs for the marker, divide by total number markers
+  obj.df$marker.per.missing[i] <-  (sum(is.na(obj.df[i,]))-1) / (ncol(obj.df)-1) 
   
 }
 
 head(obj.df$marker.per.missing)
-table(is.na(obj.df[2,]))
 
 # Plot
 pdf(file = "03_results/geno_rate_by_marker.pdf", width = 5, height = 4)
-plot(1- obj.df$marker.per.missing, xlab = "Marker index", ylab = "Genotyping rate", las = 1)
-abline(h = 0.5
+plot(100 * (1- obj.df$marker.per.missing), xlab = "Marker index", ylab = "Genotyping rate (%)", las = 1
+     , ylim = c(0,100))
+abline(h = 50
        #, col = "grey60"
        , lty = 3, )
 dev.off()
@@ -211,6 +221,7 @@ dev.off()
 keep <- rownames(obj.df[obj.df$marker.per.missing < 0.5, ])
 
 # How many loci were removed? 
+nLoc(obj.filt)
 nLoc(obj.filt) - length(keep)
 
 # Drop loci from genind
@@ -219,11 +230,13 @@ obj.all.filt <- obj.filt[, loc=keep]
 # Rename back to obj
 obj <- obj.all.filt
 
+
 ##### 03.3 Drop monomorphic loci #####
 drop_loci(drop_monomorphic = TRUE)
 obj <- obj_filt
 
-##### 03.4 Post-QC data filter #####
+
+##### 03.4 Post-QC info collection #####
 obj
 
 ## View the ind or loc names
@@ -255,6 +268,8 @@ plot(x = per_loc_stats.df$Hobs
 abline(h = 0.5, lty = 3)
 dev.off()
 
+table(per_loc_stats.df$Hobs > 0.6) # only 1
+
 ## Optional for dropping Hobs > 0.5 markers ## 
 # # Which markers are greater than 0.5 heterozygosity? 
 # keep <- setdiff(x = locNames(obj), y = hobs.outliers)
@@ -269,7 +284,7 @@ hwe_eval(data = obj, alpha = 0.01)
 
 
 ##### 03.5 Post-all filters #####
-characterize_genepop(df = obj, N = 30)
+#characterize_genepop(df = obj, N = 30)
 
 # Save out colours to be used downstream
 colours
@@ -282,8 +297,8 @@ write.csv(x = colours, file = "00_archive/formatted_cols.csv", quote = F, row.na
 # PCA from genind
 pca_from_genind(data = obj, PCs_ret = 4, colour_file = "00_archive/formatted_cols.csv")
 
-# DAPC from genind
-dapc_from_genind(data = obj, plot_allele_loadings = TRUE, colour_file = "00_archive/formatted_cols.csv")
+# # DAPC from genind
+# dapc_from_genind(data = obj, plot_allele_loadings = TRUE, colour_file = "00_archive/formatted_cols.csv")
 
 ## Dendrogram
 make_tree(bootstrap = TRUE, boot_obj = obj, nboots = 10000, dist_metric = "edwards.dist", separated = FALSE)
