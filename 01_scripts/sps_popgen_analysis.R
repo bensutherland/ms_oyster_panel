@@ -49,8 +49,7 @@ write.table(x = indiv.df, file = "02_input_data/my_data_ind-to-pop.txt"
             )
 
 # Manually annotate the output file above and populate it with your pop names (no spaces)
-
-# Save as below (tab-delimited) and load
+# Load annotated df
 indiv_annot.df <- read.table(file = "02_input_data/my_data_ind-to-pop_annot.txt"
                            , header = T, sep = "\t"
                            #, quote = F
@@ -68,21 +67,19 @@ head(indiv_annot_in_order.df)
 head(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
 tail(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
 
-### TODO: add data-check in this step (see ASIDE below) ###
-
-pop(obj) <- indiv_annot_in_order.df$pop.y
-table((pop(obj)))
-
-#characterize_genepop(obj)
-
-# ## ASIDE ##
+### TODO: add data-check in this step###
 # # Write a little test to be sure
 # test <- cbind(indNames(obj), indiv_annot_in_order.df$indiv)
 # table(test[,1] == test[ ,2])
 # 
 # # test <- cbind(indNames(obj), sort(indiv_annot_in_order.df$indiv))
 # # table(test[,1] == test[ ,2])
-# ## /END/ ASIDE ##
+# ## /END/ ##
+
+# Assign the pop IDs to the genind
+pop(obj) <- indiv_annot_in_order.df$pop.y
+table((pop(obj)))
+
 
 ## Population colours
 pops_in_genepop <- unique(pop(obj))
@@ -93,7 +90,7 @@ pops_in_genepop.df <- as.data.frame(pops_in_genepop)
 destfile <- "00_archive/my_cols.csv"
 # download.file(url, destfile)   # only need to run once
 my_colours <- read.csv(destfile)
-new_pop_colours <- matrix(c("VIU_offspring", "VIU_parent", "red", "pink"), nrow = 2, ncol = 2)
+new_pop_colours <- matrix(c("VIU_F0", "VIU_F1", "VIU_F2", "darkred", "red", "magenta"), nrow = 3, ncol = 2)
 colnames(new_pop_colours) <- c("my.pops", "my.cols")
 my_colours <- rbind(my_colours, new_pop_colours)
 my_colours
@@ -104,6 +101,8 @@ colours <- merge(x = pops_in_genepop.df, y =  my_colours, by.x = "pops_in_genepo
                  , all.x = T
                  )
 colours
+
+# Clean space
 rm(my_colours)
 rm(new_pop_colours)
 
@@ -113,33 +112,12 @@ rm(new_pop_colours)
 percent_missing_by_ind(df = obj)
 head(missing_data.df)
 
-# # Find missing data per individual
-# obj.df <- genind2df(obj)
-# #str(obj.df)
-# dim(obj.df)
-# obj.df[1:5,1:5]
-# obj.df[365:370,585:591]
-# 
-# # Include vector to dataframe of percent missing by individual
-# obj.df$ind.per.missing <- NA
-# 
-# for(i in 1:(nrow(obj.df))){
-#   
-#   # percent missing             sum of NAs for this row divided by the number of columns, minus two (i.e. pop, per.missing) #TODO: need better way
-#   obj.df[i,"ind.per.missing"] <- ( sum(is.na(obj.df[i,])) / (ncol(obj.df) - 2) )
-#   #obj.df$ind.per.missing[i] <- ( sum(is.na(obj.df[i,])) / (ncol(obj.df) - 2) )
-#   
-# }
-# 
-# dim(obj.df)
-# obj.df[1:5, c(1:2, 585:592)]
-# obj.df[365:370, c(1:2, 585:592)]
-
+# Add pop IDs to the missing data
 missing_data.df <- merge(x = missing_data.df, y = indiv_annot.df, by.x = "ind", by.y = "indiv", all.x = T)
 head(missing_data.df)
 head(indiv_annot.df)
 
-# Combine colours to dataframe for plotting, don't sort
+# Add colours to the missing data
 colours
 plot_cols.df <- merge(x = missing_data.df, y = colours, by.x = "pop", by.y = "pops_in_genepop", all.x = T
                       , sort = F
@@ -152,13 +130,15 @@ plot(100 * (1 - plot_cols.df$ind.per.missing), ylab = "Genotyping rate (%)"
      , las = 1
      , xlab = "Individual"
      , ylim = c(0,100)
+     , pch=16
+     , cex = 1
      )
 
 abline(h = 50, lty = 3)
 
 legend("bottomleft", legend = unique(plot_cols.df$pop)
        , fill = unique(plot_cols.df$my.cols)
-       , cex = 1.0
+       , cex = 0.7
        , bg = "white"
        )
 dev.off()
@@ -206,15 +186,17 @@ for(i in 1:(nrow(obj.df))){
   
 }
 
-head(obj.df$marker.per.missing)
 
 # Plot
 pdf(file = "03_results/geno_rate_by_marker.pdf", width = 5, height = 4)
 plot(100 * (1- obj.df$marker.per.missing), xlab = "Marker index", ylab = "Genotyping rate (%)", las = 1
-     , ylim = c(0,100))
+     , ylim = c(0,100)
+     , pch = 16
+     , cex = 0.85
+     )
 abline(h = 50
        #, col = "grey60"
-       , lty = 3, )
+       , lty = 3)
 dev.off()
 
 # Filter
@@ -263,6 +245,8 @@ plot(x = per_loc_stats.df$Hobs
      , xlab = "Marker (index)"
      , ylab = "Observed Heterozygosity (Hobs)"
      , las = 1
+     , pch = 16
+     , cex = 0.85
      )
 
 abline(h = 0.5, lty = 3)
@@ -280,12 +264,9 @@ table(per_loc_stats.df$Hobs > 0.6) # only 1
 
 ## Hardy-Weinberg
 hwe_eval(data = obj, alpha = 0.01)
-# writes out as HWE_result_alpha_0.01.txt
 
 
 ##### 03.5 Post-all filters #####
-#characterize_genepop(df = obj, N = 30)
-
 # Save out colours to be used downstream
 colours
 colnames(x = colours) <- c("collection", "colour")
@@ -311,7 +292,7 @@ regional_obj <- obj
 
 # Combine related pops to query private alleles at regional level
 unique(pop(regional_obj))
-pop(regional_obj) <- gsub(pattern = "VIU_offspring|VIU_parent", replacement = "VIU", x = pop(regional_obj)) # combine VIU
+pop(regional_obj) <- gsub(pattern = "VIU_F0|VIU_F1|VIU_F2", replacement = "VIU", x = pop(regional_obj)) # combine VIU
 pop(regional_obj) <- gsub(pattern = "PEN|FRA|JPN", replacement = "JPN", x = pop(regional_obj))              # combine JPN lineage
 unique(pop(regional_obj))
 
