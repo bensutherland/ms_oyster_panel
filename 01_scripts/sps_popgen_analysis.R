@@ -322,42 +322,9 @@ micro_stock_code.FN <- "00_archive/stock_code.txt"
 datatype <- "SNP" # required for genepop_to_rubias_SNP
 obj # the current analysis object
 genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN)
+print("Your output is available as '03_results/rubias_output_SNP.txt")
 
-# Using this output, move to "01_scripts/ckmr_from_rubias.R"
+file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_all_rubias.txt", overwrite = F)
 
-## Simulations
-# full_sim(rubias_base.FN = "03_results/rubias_output_SNP.txt", num_sim_indiv = 200, sim_reps = 100)
-
-## Inbreeding
-# # Estimating inbreeding (from adegenet tutorial)
-# obj_PEN <- seppop(x = obj)$PEN
-# obj_VIU_parent <- seppop(x = obj)$VIU_parent
-# obj_VIU_offspring <- seppop(x = obj)$VIU_offspring
-# obj_DPB <- seppop(x = obj)$DPB
-# 
-# # compute the mean inbreeding for each individual and plot
-# #temp <- inbreeding(x = obj_PEN, N = 100)
-# #temp <- inbreeding(x = obj_VIU_parent, N = 100)
-# #temp <- inbreeding(x = obj_VIU_offspring, N = 100)
-# temp <- inbreeding(x = obj_DPB, N = 100)
-# 
-# class(temp)
-# head(names(temp))
-# temp[[1]] # temp is a list of values sampled from the likelihood distribution of each individual; means values are obtained for all indiv using sapply
-# Fbar <- sapply(temp, mean)
-# hist(Fbar, col = "firebrick", main = "Average inbreeding in Pendrell")
-# hist(Fbar, col = "firebrick", main = "Average inbreeding in VIU parents")
-# hist(Fbar, col = "firebrick", main = "Average inbreeding in VIU offspring")
-# hist(Fbar, col = "firebrick", main = "Average inbreeding in DPB")
-
-
-## Per sample heterozygosity
-
-# The following would need extensive coding to make happen
-#rubias_to_vcf() # write out, then use instructions here to get per individual heterozygosity in vcftools
-# https://github.com/bensutherland/ms_oyster_popgen/blob/master/01_scripts/heterozygosity.sh
-# per population heterozygosity
-
-
-# related would be good to run after here
+# Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
 
