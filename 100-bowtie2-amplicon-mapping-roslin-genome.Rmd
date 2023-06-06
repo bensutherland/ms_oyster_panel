@@ -1,0 +1,293 @@
+---
+title: "100-fasta-seqs-mapping"
+author: "Neil Thompson"
+date: "2023-02-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## make fasta seqs for mapping the sutherland amplicons to roslin genome
+```{r, message=FALSE, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(kableExtra)
+library(knitr)
+```
+
+
+Note; if you're running this code you'll need to change the paths to the data
+files or else you're going to have a woeful experience.
+
+Read in sutherland amplicons
+```{r, load-data}
+sutherland <- read_xlsx("../data/thermo_submitted_sutherland_cgig_v.0.1_2022-02-08_marker_data_only_2023-02-21.xlsx")
+
+head(sutherland)
+
+amps <- sutherland %>%
+  dplyr::select(1,contains("Sequence")) %>%
+  rename(locus = 1,
+    seqs = 2) %>%
+  filter(!is.na(seqs))
+```
+
+
+look at some of the amplicons
+```{r, inspect-amplicon-seqs}
+amps %>% 
+  mutate(snp_pos = str_locate(seqs, "\\[")[,1]) %>% 
+  distinct(snp_pos) # every SNP is at pos 201
+
+amps2fasta <- amps %>%
+  mutate(var_start = str_locate(seqs, "\\[")[,1],
+           var_end = str_locate(seqs, "\\]")[,1]) %>%
+  mutate(fasta = paste0(str_sub(seqs, 1, var_start-1), "N", str_sub(seqs, var_end+1, -1))) %>%
+  dplyr::select(locus,fasta) %>%
+  mutate(seq_len = nchar(fasta))
+```
+
+write amplicon seqs into FASTA format
+```{r, batch-primer3-fasta-file}
+writefasta <- function(x) {
+fasta2write <- x %>% slice(1) %>% pull(fasta)
+loc_id <- x %>% slice(1) %>% pull(locus)
+cat(">", loc_id, "\n", fasta2write, "\n", sep = "", 
+    file = "../data/sutherland-snp-panel.fa", append=TRUE)
+}
+
+outp_list <- split(amps2fasta, amps$locus)
+
+map_dfr(outp_list, writefasta)
+```
+
+
+use bowtie2 to align array seqs to genome 
+http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml
+
+Do this on USDA HPC CERES.
+
+first, transfer sutherland-snp-panel.fa onto ceres (not-shown)
+
+bowtie2 and samtools command:
+
+bowtie2 --end-to-end -x /reference/data/NCBI/pacific_oyster/bowtie2/GCF_902806645.1_cgigas_uk_roslin_v1_genomic.fna -k 6 -f -U /90daydata/pacific_shellfish/sutherland_amplicon_mapping/sutherland-snp-panel.fa | samtools view > ./sutherland_snp_panel_bowtie2_map.sam
+
+Copy the bowtie2 back to my laptop (not shown)
+
+load in alignments from bowtie2.
+
+```{r, bowtie2-alignments}
+sam <- read.table("../data/sutherland_snp_panel_bowtie2_map.sam", 
+                  header = FALSE, sep = "\t", fill = TRUE)
+#head(sam)
+
+single_mappers <- sam %>%
+  rename(primer = 1,
+         flag = 2,
+         refseq = 3,
+         pos = 4,
+         mapq = 5,
+         cigar = 6,
+         rnext = 7,
+         pnext =8,
+         tlen = 9,
+         seq = 10,
+         qual = 11)  %>%
+  group_by(primer) %>%
+  mutate(n_map = n()) %>%
+  distinct(primer, refseq, pos, n_map, cigar) %>% 
+  group_by(primer) %>%
+  mutate(multimap = any(n_map>1)) %>% 
+  filter(multimap ==FALSE) %>%
+  ungroup()
+
+single_mappers %>%
+  filter(str_detect(refseq, "^NC_")) %>%
+  group_by(refseq) %>%
+  summarise(min_pos = min(pos),
+            max_pos = max(pos),
+            n_loci = n()) %>%
+  rename(chrom = 1) %>%
+   kable("html", caption = "all single mappers, Coverage by chrom") %>%
+  kable_styling("striped", full_width=FALSE) 
+```
+
+
+how many loci are clean matches?
+```{r, clean-match-single-mappers}
+single_mappers %>%
+  filter(str_detect(refseq, "^NC_"),
+         str_detect(cigar, "401M")) %>%
+  count(refseq)%>%
+   kable("html", caption = "number of loci without indels, single mappers to chrom") %>%
+  kable_styling("striped", full_width=FALSE)
+```
+
+that's not very many.
+
+Look at the MD:Z string to see what kind of mapping quality we find.
+```{r}
+mdz_codes <- sam %>%
+  dplyr::select(1,3,4,6,12:20) %>%
+  pivot_longer(-c(1,2,3,4), names_to = "cnum", values_to = "codes") %>%
+  filter(str_detect(codes, "MD:Z")) %>%
+  dplyr::select(-"cnum") %>%
+  rename(loc_id = V1,
+         refseq = V3,
+         pos = V4,
+         cigar = V6,
+         MDZ_codes = codes) %>%
+  mutate(MDZ_codes = str_sub(MDZ_codes, 6, nchar(MDZ_codes)))
+
+mdz_codes %>% group_by(loc_id) %>%
+  filter(n()<2) %>% ungroup() %>% #remove multi mappers
+  filter(str_detect(refseq, "^NC_")) %>% #retain mapped to chroms.
+  mutate(num_deletions = str_count(cigar, "D"),
+         del_sizes= map_chr(str_extract_all(cigar, "[0-9]{1,3}D"), ~ str_c(.x, collapse=",")),
+         del_snps = case_when(
+           num_deletions==0 ~ 0,
+           num_deletions>0 ~ sapply(str_extract_all(del_sizes, "[[:digit:]]+"),
+                           function(x) ifelse(identical(x, character(0)),NA,sum(as.numeric(x)))))) %>%
+  mutate(num_inserts = str_count(cigar, "I"),
+         insert_sizes= map_chr(str_extract_all(cigar, "[0-9]{1,3}I"), ~ str_c(.x, collapse=",")),
+         insert_snps = case_when(
+           num_inserts==0 ~ 0,
+           num_inserts>0 ~ sapply(str_extract_all(insert_sizes, "[[:digit:]]+"),
+                           function(x) ifelse(identical(x, character(0)),NA,sum(as.numeric(x)))))) %>%
+  mutate(n_snps = str_count(MDZ_codes, "A|T|C|G")-del_snps) %>%
+  dplyr::select(n_snps,del_snps, insert_snps, MDZ_codes, everything()) %>%
+  arrange(n_snps, del_snps, insert_snps)
+```
+
+wow, that's a rabbit hole I'm not sure I want to go down right now. But it's 
+super interesting and something I think may be worth diving into for future 
+panel iteration....
+
+
+Overall there is a lot of variablity in the mapping
+How many single mapping loci are on non-NC refseq ids?
+```{r, non-chrom-single-mappers}
+single_mappers  %>%
+  filter(str_detect(refseq, "^NW_")) %>%
+   kable("html", caption = "single mappers to non-chroms") %>%
+  kable_styling("striped", full_width=FALSE)
+```
+
+not too many are non-chromosomal single mapping loci.
+
+make a figure of the distribution of loci along each chrom
+
+```{r, manuscript-figure}
+genome_metadata <- read_xlsx("../data/gigas-genome-roslin-metadata.xlsx")
+
+chr_lengths <- genome_metadata %>%
+  dplyr::select(total_length, refseq_id) %>%
+  rename(refseq = refseq_id)
+
+single_mappers %>%
+  filter(str_detect(refseq, "^NC_")) %>%
+  mutate(chrom = paste0(substr(refseq,1,3),substr(refseq,8,9)),
+         y2plot=1) %>%
+  left_join(., chr_lengths, "refseq") %>%
+  ggplot(., aes(x=pos, y = y2plot)) +
+  geom_jitter(height=0.01) + 
+  scale_y_continuous(name="",
+                     labels = NULL, 
+                     breaks =  NULL,minor_breaks = NULL, 
+                     limits = c(0.95,1.05))+
+  scale_x_continuous(name  = "Position (bp)")+
+  geom_vline(aes(xintercept = total_length), linetype = 2) +
+  #ggtitle("sutherland-single-site-markers-mapped") +
+  facet_grid(chrom ~ ., switch = "y")+
+  theme(strip.text.y.left = element_text(angle = 0))
+
+#ggsave("../sutherland-single-mapping-loci-distribution.pdf", width = 8, height=6)
+```
+
+
+Summarise the multiple mapping loci and the non-mappers
+
+```{r, multi-map-loci}
+multi_map_loci <- sam %>%
+  rename(primer = 1,
+         flag = 2,
+         refseq = 3,
+         pos = 4,
+         mapq = 5,
+         cigar = 6,
+         rnext = 7,
+         pnext =8,
+         tlen = 9,
+         seq = 10,
+         qual = 11)  %>%
+  group_by(primer) %>%
+  mutate(n_map = n()) %>%
+  distinct(primer, refseq, pos, n_map, cigar) %>% 
+  group_by(primer) %>%
+  mutate(multimap = any(n_map>1)) %>% 
+  filter(multimap ==TRUE) 
+```
+
+There are `r multi_map_loci%>%distinct(primer)%>%nrow(.)` loci that mapped to 
+multiple locations within the Penaloza genome.  
+
+How many loci didn't map to a chrom? This would be a * in the sam output.
+
+```{r, non-mappers}
+non_mappers <- sam %>%
+  filter(str_detect(V3, "\\*")) %>%
+  pull(V1)
+```
+
+There are `r length(non_mappers)` loci that weren't mapped by bowtie2
+
+Last thing to look at.  Are any of the multiple mapping loci in the gaps of the
+locus distribution?
+
+```{r, multi-map-distribution-figure}
+sam %>%
+  rename(primer = 1,
+         flag = 2,
+         refseq = 3,
+         pos = 4,
+         mapq = 5,
+         cigar = 6,
+         rnext = 7,
+         pnext =8,
+         tlen = 9,
+         seq = 10,
+         qual = 11)  %>%
+  group_by(primer) %>%
+  mutate(n_map = n()) %>%
+  distinct(primer, refseq, pos, n_map, cigar) %>% 
+  group_by(primer) %>%
+  mutate(multimap = any(n_map>1)) %>%
+  ungroup() %>%
+  filter(!str_detect(refseq, "\\*")) %>% # remove the non-mapping loci
+  mutate(chrom = paste0(substr(refseq,1,3),substr(refseq,8,9)),
+         y2plot = case_when(
+           multimap==TRUE ~ 1.1,
+           multimap==FALSE ~ 1.0
+         )) %>%
+  left_join(., chr_lengths, "refseq") %>%
+  filter(str_detect(refseq, "^NC_")) %>% #only interested in multimap to chroms
+  ggplot(., aes(x=pos, y = y2plot, fill=multimap, colour=multimap)) +
+  geom_jitter(height=0.01) + 
+  scale_y_continuous(name="",
+                     labels = NULL, 
+                     breaks =  NULL,minor_breaks = NULL, 
+                     limits = c(0.90,1.2))+
+  scale_x_continuous(name  = "Position (bp)")+
+  geom_vline(aes(xintercept = total_length), linetype = 2) +
+  facet_grid(chrom ~ ., switch = "y")+
+  theme(strip.text.y.left = element_text(angle = 0))
+
+#ggsave("../sutherland-multi-mapping-loci-distribution.pdf", width = 8, height=6)
+```
+
+Well isn't that interesting! There appear to be gaps on NC_60, NC_62, NC_63(?),
+NC_67 that are filled in by the multiple mapping loci.That's suggestive of
+repetitive regions in the genome (potentially, could be other things too).
