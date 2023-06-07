@@ -9,20 +9,17 @@ _Note: this repository is for the designed use of the author only and comes with
 
 Requires basic Linux or Mac OS, and all shell scripts are run from the main directory.     
 
-## Designing the panel ##
+## Panel design ##
 #### Requirements:      
 - bedtools     
+- R 
 - [Eric Normandeau's scripts](https://github.com/enormandeau/Scripts)        
-- R packages as designated in the Rscripts     
  
 
 #### Data inputs:     
-- Single SNP data in plink format from Sutherland et al. 2020 (Evol. Appl.)        
-- Single SNP data populations output in VCF format       
-- Reference genome for Pacific oyster used in identifying markers (Zhang et al. 2012; Sutherland et al. 2020)         
-Download this version, GenBank format: https://www.ncbi.nlm.nih.gov/assembly/GCF_000297895.1/        
-
-Note: in Sutherland et al. 2020, the genetic data was been filtered to retain markers present in 70% of individuals in all of 15 populations, with a --min-maf >= 0.01, and with HWE outliers removed.        
+- Prefiltered single SNP data in plink format from Sutherland et al. 2020 (Evol. Appl.) (here) #TODO       
+- Prefiltered single SNP data populations output in VCF format (here) #TODO      
+- Reference genome for Pacific oyster used in identifying markers (Zhang et al. 2012; Sutherland et al. 2020)[download GenBank version here](https://www.ncbi.nlm.nih.gov/assembly/GCF_000297895.1/)         
 
 
 ### 01. Filter and characterize variants ###
