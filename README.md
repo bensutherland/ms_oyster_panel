@@ -23,13 +23,13 @@ Requires basic Linux or Mac OS, and all shell scripts are run from the main dire
 
 
 ### 01. Filter and characterize variants ###
-Use the script `01_scripts/01_identifying_markers.R` run interactively in R. This script will do the following:      
-1. Import data and select only the BC naturalized samples
-2. Perform minor allele frequency (MAF) filter to remove low MAF variants wrt. BC pops
+Run interactively in R: `01_scripts/01_identifying_markers.R` to:       
+1. Import data and select only the British Columbia (BC) naturalized samples
+2. Perform minor allele frequency (MAF) filter to remove variants under MAF in BC populations
 3. Calculate per locus stats observed heterozygosity (Hobs) and FST (averaged per locus)
-4. Generate comparative per locus stats plots
+4. Generate comparative per locus stat plots
 
-...output per locus stats for filtered variants:      
+...outputs per locus stats for filtered variants:      
 `03_marker_selection/all_markers_per_locus_stats_incl_hobs_MAF.csv`     
 
 ...with the following format:    
@@ -39,21 +39,18 @@ mname,Fit,Fst,Fis,maf.vec,Hobs
 ```
 
 
-### 02. Additional markers to include
-Custom markers will be included in the panel. Currently this includes markers that are private alleles for a couple of populations in culture only in British Columbia. This will use code and resources adapted from `https://github.com/bensutherland/ms_oyster_popgen`, specifically the following:     
-`00_archive/my_cols.csv`         
-`01_scripts/private_alleles.r`      
-...which have been named with the same filenames/ folders in the current repo, but updated mainly to allow output of specific marker names.     
+### 02. Add custom selected markers
+Custom markers will be included in the panel, specifically private allele variants specific to cultured BC populations. This will use code and resources adapted from `https://github.com/bensutherland/ms_oyster_popgen`, specifically `00_archive/my_cols.csv` and `01_scripts/private_alleles.r`.      
 
-Run `01_scripts/private_alleles.r`      
-...this will identify mnames of high frequency private alleles from DPB and GUR populations.    
-Outputs:    
+Interactively run `01_scripts/private_alleles.r` to identify marker names (mnames) of high frequency private alleles from DPB and GUR populations.    
+
+*Outputs:*    
 `03_marker_selection/per_repunit_private_allele_tally_all_data.csv`     
 `03_marker_selection/DPB_selected_PA_mnames.csv`    
 `03_marker_selection/GUR_selected_PA_mnames.csv`    
 
 
-### 03. Select the top markers to create whitelists ###
+### 03. Select the top markers ###
 Set the number of markers you want to collect from each, then run `01_scripts/01b_collect_mnames.sh`    
 Output will be rows of mnames and mtype, no header.      
 
