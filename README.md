@@ -1,13 +1,16 @@
-# ms_oyster_panel
-Code to support the design of a Pacific oyster amplicon panel. Starts with a VCF and plink data export from Stacks populations module, and uses reference genome, to produce a submission-ready text file for amplicon design.      
+# Pacific oyster panel design and testing
+Code to support the design and testing an amplicon panel for Pacific oyster (_Crassostrea gigas_).      
+Design of the panel: here (#add)       
+Determining genomic coordinates: here (#add)       
+Testing of the panel: here (#add)        
+
 
 _Note: this repository is for the designed use of the author only and comes with no guarantees of usefulness for anything else._       
 
-Requires basic Linux or Mac OS.      
-All shell scripts are run from the main directory.     
+Requires basic Linux or Mac OS, and all shell scripts are run from the main directory.     
 
+## Designing the panel ##
 #### Requirements:      
-- Input files (see below)
 - bedtools     
 - [Eric Normandeau's scripts](https://github.com/enormandeau/Scripts)        
 - R packages as designated in the Rscripts     
