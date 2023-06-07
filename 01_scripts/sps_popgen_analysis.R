@@ -301,6 +301,9 @@ write.csv(x = pa, file = "03_results/private_alleles.csv", quote = F)
 
 save.image(file = "03_results/post-filters_genind_and_enviro.RData")
 
+# Confirm pops are as expected in obj
+as.data.frame(cbind(indNames(obj), as.character(pop(obj))))
+
 
 ####### Convert genepop to Rubias format #####
 # Need to create a tab-delim stock code file in format of e.g., 
@@ -320,11 +323,14 @@ micro_stock_code.FN <- "00_archive/stock_code.txt"
 
 ## Convert genepop to rubias
 datatype <- "SNP" # required for genepop_to_rubias_SNP
+as.data.frame(cbind(indNames(obj), as.character(pop(obj)))) # Note: BR27 should be VIU_F0 [confirmed]
 obj # the current analysis object
+
 genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN)
+
 print("Your output is available as '03_results/rubias_output_SNP.txt")
 
-file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_all_rubias.txt", overwrite = F)
+file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_all_rubias.txt", overwrite = T)
 
 # Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
 
