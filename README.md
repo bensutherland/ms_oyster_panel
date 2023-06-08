@@ -1,13 +1,12 @@
 # Pacific oyster panel design and testing
-Code to support the design and testing an amplicon panel for Pacific oyster (_Crassostrea gigas_).      
-Skip to panel design [here](#toadd)       
-Skip to chromosome coordinates [here](#toadd)       
-Skip to panel testing [here](#toadd)         
+Code to support the design and testing an amplicon panel for Pacific oyster (_Crassostrea gigas_), designed for the use of the authors and associated [manuscript](#toadd), and comes with no guarantees for usefulness for any other purposes.       
 
+Requires Linux or Mac OS, and all shell scripts are run from the main directory.    
 
-_Note: this repository is for the designed use of the author only and comes with no guarantees of usefulness for anything else._       
+Skip to [panel design section](https://github.com/bensutherland/ms_oyster_panel/blob/main/README.md#panel-design)       
+Skip to [chromosome coordinates section](https://github.com/bensutherland/ms_oyster_panel/blob/main/README.md#chromosome-positions)       
+Skip to [panel testing section](https://github.com/bensutherland/ms_oyster_panel/blob/main/README.md#panel-testing)         
 
-Requires Linux or Mac OS, and all shell scripts are run from the main directory.     
 
 ## Panel design ##
 #### Requirements:      
@@ -120,6 +119,8 @@ Once the best individual per technical reps is identified, move to `01_scripts/s
 
 
 
+## Chromosome positions ##
 
 
+## Panel testing ##
 
