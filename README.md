@@ -10,19 +10,19 @@ _Note: this repository is for the designed use of the author only and comes with
 Requires basic Linux or Mac OS, and all shell scripts are run from the main directory.     
 
 ## Panel design ##
-### Requirements:      
+#### Requirements:      
 - bedtools     
 - R 
 - [Eric Normandeau's scripts](https://github.com/enormandeau/Scripts)        
  
 
-### Data inputs:     
+#### Data inputs:     
 - Prefiltered single SNP data in plink format from Sutherland et al. 2020 (Evol. Appl.) (here) #TODO       
 - Prefiltered single SNP data populations output in VCF format (here) #TODO      
 - Reference genome for Pacific oyster used in identifying markers (Zhang et al. 2012; Sutherland et al. 2020)[download GenBank version here](https://www.ncbi.nlm.nih.gov/assembly/GCF_000297895.1/)         
 
 
-#### 01. Filter and characterize variants ###
+### 01. Filter and characterize variants ###
 Run interactively in R: `01_scripts/01_identifying_markers.R` to:       
 1. Import data and select only the British Columbia (BC) naturalized samples
 2. Perform minor allele frequency (MAF) filter to remove variants under MAF in BC populations
@@ -39,7 +39,7 @@ mname,Fit,Fst,Fis,maf.vec,Hobs
 ```
 
 
-#### 02. Add custom selected markers
+### 02. Add custom selected markers
 Custom markers will be included in the panel, specifically private allele variants specific to cultured BC populations. This will use code and resources adapted from `https://github.com/bensutherland/ms_oyster_popgen`, specifically `00_archive/my_cols.csv` and `01_scripts/private_alleles.r`.      
 
 Interactively run `01_scripts/private_alleles.r` to identify marker names (mnames) of high frequency private alleles from DPB and GUR populations.    
@@ -50,7 +50,7 @@ Interactively run `01_scripts/private_alleles.r` to identify marker names (mname
 - `03_marker_selection/GUR_selected_PA_mnames.csv`    
 
 
-#### 03. Select the top markers ###
+### 03. Select the top markers ###
 Interactively run `01_scripts/01b_collect_mnames.sh` and set the number of markers that you want to retain based on high HOBS and high FST characteristics.     
 
 **Outputs**
@@ -62,7 +62,7 @@ e.g.,
 ```
 
 
-#### 04. Obtain info from VCF on selected markers ###
+### 04. Obtain info from VCF on selected markers ###
 Interactively run `01_scripts/02_info_from_vcf.sh` to obtain specific information about the markers from the larger VCF       
 
 **Outputs** 
@@ -72,7 +72,7 @@ This is a text file with fields (1) chr; (2) pos of SNP in ref genome; (3) info 
 JH816256.1,99460,100388:26:-,G,A
 ```
 
-#### 05. Prepare BED file
+### 05. Prepare BED file
 Interactively run `01_scripts/03_prepare_bed_file.sh` to prepare a bed file based on the selected markers
 
 **Outputs**
@@ -83,7 +83,7 @@ e.g.,
 ```
 
 
-#### 06. Extract FASTA from reference genome
+### 06. Extract FASTA from reference genome
 Run `01_scripts/04_extract_from_reference.sh` to extract selected marker flanking sequence from the genome
 
 **Outputs**     
@@ -91,7 +91,7 @@ Run `01_scripts/04_extract_from_reference.sh` to extract selected marker flankin
 - `04_extract_loci/selected_chr_and_seq.txt` (tab delim version)    
 
 
-#### 07. Create design submission file
+### 07. Create design submission file
 Interactively run `01_scripts/05_make_submission_form.R` to connect sequence data to selected marker information from the VCF.         
 
 **Outputs**        
@@ -104,7 +104,7 @@ Note that the reference allele is given that designation based on the reference 
 #END TODO# fix: this section
 
 
-#### 08. Additional data checking (optional)
+### 08. Additional data checking (optional)
 Interactively run `01_scripts/confirm_FST.R` to confirm that the selected markers for high FST are indeed leading to higher population-level FST estimates.        
 
 **Inputs**
@@ -112,7 +112,7 @@ Interactively run `01_scripts/confirm_FST.R` to confirm that the selected marker
 - `04_extract_loci/selected_mnames.csv` 
 
 
-#### 09. Additional info on VCF formats ####
+### 09. Additional info on VCF formats 
 This section is for review only, but contains some relevant information about formats.     
 To extract from the reference genome, we will use bedtools combined with a bedfile.     
 The bedfile will be in the format of:     
