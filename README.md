@@ -206,16 +206,10 @@ ckmr_from_rubias(input.FN = "03_prepped_data/cgig_all_rubias.txt", parent_pop = 
 ```
 
 **Outputs**
-#TODO
-
-
-
-
-
-
-
-
-
+- Figure of logl from simulated relationships
+- Parent-offspring relationships above the cutoff
+- Parent and offspring full-sib results above the cutoff
+- Retained individuals for both parent and offspring populations
 
 
 
