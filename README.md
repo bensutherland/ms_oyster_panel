@@ -4,7 +4,7 @@ Code to support the design and testing an amplicon panel for Pacific oyster (_Cr
 Requires Linux or Mac OS, and all shell scripts are run from the main directory.    
 
 Skip to [panel design section](https://github.com/bensutherland/ms_oyster_panel/blob/main/README.md#panel-design)       
-Skip to [chromosome coordinates section](https://github.com/bensutherland/ms_oyster_panel/blob/main/README.md#chromosome-positions)       
+Skip to [chromosome positions section](https://github.com/bensutherland/ms_oyster_panel/blob/main/README.md#chromosome-positions)       
 Skip to [panel testing section](https://github.com/bensutherland/ms_oyster_panel/blob/main/README.md#panel-testing)         
 
 
@@ -118,6 +118,20 @@ Interactively run `01_scripts/confirm_FST.R` to confirm that the selected marker
 
 
 ## Chromosome positions ##
+Currently implemented in an interactive Rscript `100-bowtie2-amplicon-mapping-roslin-genome.Rmd` [here](https://github.com/bensutherland/ms_oyster_panel/tree/main/100_amplicon_mapping) 
+
+#### Requirements
+- bowtie2
+- samtools
+- R
+
+#### Data inputs
+- Marker information file `thermo_submitted_sutherland_cgig_v.0.1_2022-02-08_marker_data_only_2023-02-21.xlsx` available as Additional File X [here](#toadd)      
+- Reference genome (Roslin Institute) available [here](https://www.ncbi.nlm.nih.gov/assembly/GCF_902806645.1)      
+
+**Outputs**
+- Alignment sam file
+- Plot of distribution of markers across the reference genome chromosomes including singly or multiply aligning markers
 
 
 ## Panel testing ##
