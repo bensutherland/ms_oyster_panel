@@ -113,9 +113,7 @@ Interactively run `01_scripts/confirm_FST.R` to confirm that the selected marker
 #### Also see information [here](#TODO) for additional information on the bed and VCF formats for extraction.       
 
 
-## Additional Analyses for Pilot Study
-Use the script `01_scripts/use_multiple_run_data.R` to analyze data from the two different runs that were sequenced as part of the pilot study. This script will allow you to choose the best technical replicate (i.e., the one with the most typed markers) and combine into a single genind file for analysis. It will also evaluate technical replicates within a sequencing run.        
-Once the best individual per technical reps is identified, move to `01_scripts/simple_pop_stats_Cgig_analysis_*.R`, which will allow you to analyze the data (requires the [simple_pop_stats](https://github.com/bensutherland/simple_pop_stats) repo).     
+[simple_pop_stats](https://github.com/bensutherland/simple_pop_stats) repo).     
 
 
 
@@ -123,4 +121,101 @@ Once the best individual per technical reps is identified, move to `01_scripts/s
 
 
 ## Panel testing ##
+#### Requirements:      
+- [amplitools](https://github.com/bensutherland/amplitools)       
+- [simple_pop_stats](https://github.com/bensutherland/simple_pop_stats)      
+- R 
+Note: clone amplitools and simple_pop_stats in the same parent directory as the present repository so that they are all at the same level.      
+
+
+#### Data inputs:     
+- Multiple Ion Torrent VariantCaller output files (tab-delim but .xls suffix) (here) #TODO       
+
+
+### 01. Load results from available amplicon sequencing VariantCaller outputs 
+Copy ampliseq files in `amplitools/02_input_data` folder, then open `amplitools/01_scripts/00_initiator.R` in Rstudio and source the script. This will load amplitools.       
+
+Open `amplitools/01_scripts/demo_analysis.R` for a demonstration analysis (also shown in brief below).      
+
+From within R, convert proton results to genepop results using the following amplitools script:      
+```
+proton_to_genepop(hotspot_only=TRUE, neg_control="BLANK")         
+# hotspot_only (T/F) indicates whether only hotspot variants will be considered, or all variants including novel variants
+# neg_control is a string found in only negative control samples to filter them out
+```
+
+Then from the amplitools main directory, finalize the genepop format using the following for each file:      
+`amplitools/01_scripts/format_genepop.sh <filename>`        
+
+**Outputs**
+- `*.gen` files prepared in `amplitools/02_input_data/prepped_matrices`     
+
+
+### 02. Compare technical replicate samples and retain the best replicates 
+Copy the output `*.gen` files from above into `simple_pop_stats/02_input_data`.        
+
+In Rstudio clear the workspace, then source `simple_pop_stats/01_scripts/simple_pop_stats_start.R`     
+Also source the development script `simple_pop_stats/01_scripts/dev/comp_tech_reps.R`       
+
+Run the following:      
+`comp_tech_reps(format_type = "amplitools", max_missing = 0.5)`        
+Where `max_missing` indicates the maximum missing data to retain a sample for the technical replicate comparison.       
+
+Save out the produced genind object, which contains only the best of the technical replicate samples:      
+`save(obj_nr_best, file = "02_input_data/obj_nr_best_2023-06-08.RData")`      
+
+Note: if you need to restart at any future time, you can always reload this file by:     
+`load("02_input_data/obj_nr_best_2023-06-08.RData")`      
+
+**Outputs**      
+- obj_nr_best , a single sample per tech rep for population genetic analysis (below)
+- #TODO add other items
+
+
+### 03. General population genetic characterization of pilot study
+With `simple_pop_stats` functions still sourced (i.e., not cleared space), in Rstudio, run interactively `ms_oyster_panel/01_scripts/sps_popgen_analysis.R`        
+note: if you need to reload the `obj_nr_best` see above       
+note: if you are not running tech replicates, can use `load_genepop(datatype="SNP")` to select your genepop
+
+Follow the instructions of the script to:     
+1. Prepare data including adding population attribute to the genepop
+2. Characterize missing data and filter as needed
+3. Remove monomorphic loci
+4. Generate per-locus statistics
+5. Run multivariate and differentiation analyses
+6. Identify private alleles at the regional or population level
+7. Convert the genepop to a rubias file for downstream use in parentage (see below)
+
+**Outputs**
+- various simple_pop_stats output in 03_results
+- a rubias file will be output to `amplitools/03_prepped_data/cgig_all_rubias.txt`    
+
+### 04. Parentage analysis
+Requires that the rubias file was produced in the preceding step. This will contain three generations of samples, `VIU_F0`, `VIU_F1`, `VIU_F2` for parentage analysis.      
+Clear the workspace, then source `amplitools/00_initiator.R`      
+
+Estimate log likelihoods from the data and simulated siblings and parents, then calculate on your existing data:     
+Run the following two scripts to analyze each set of contrasts:       
+```
+# For F1 vs. F2 (parents vs. offspring)
+ckmr_from_rubias(input.FN = "03_prepped_data/cgig_all_rubias.txt", parent_pop = "VIU_F1", offspring_pop = "VIU_F2", cutoff = 5)
+
+# For F0 vs. F1 (grandparents vs. parents)
+ckmr_from_rubias(input.FN = "03_prepped_data/cgig_all_rubias.txt", parent_pop = "VIU_F0", offspring_pop = "VIU_F1", cutoff = 5)
+
+```
+
+**Outputs**
+#TODO
+
+
+
+
+
+
+
+
+
+
+
 
