@@ -147,7 +147,9 @@ Note: clone amplitools and simple_pop_stats in the same parent directory as the 
 
 
 ### 01. Load results from available amplicon sequencing VariantCaller outputs 
-Copy ampliseq files in `amplitools/02_input_data` folder, then open `amplitools/01_scripts/00_initiator.R` in Rstudio and source the script. This will load amplitools.       
+Copy VariantCaller output files into the `amplitools/02_input_data` folder.     
+
+Open `amplitools/01_scripts/00_initiator.R` in Rstudio and source the script. This will load amplitools.       
 
 Open `amplitools/01_scripts/demo_analysis.R` for a demonstration analysis (also shown in brief below).      
 
