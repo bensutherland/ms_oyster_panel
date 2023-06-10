@@ -138,7 +138,7 @@ Currently implemented in an interactive Rscript `100-bowtie2-amplicon-mapping-ro
 #### Requirements:      
 - [amplitools](https://github.com/bensutherland/amplitools)       
 - [simple_pop_stats](https://github.com/bensutherland/simple_pop_stats)      
-- R 
+- R             
 Note: clone amplitools and simple_pop_stats in the same parent directory as the present repository so that they are all at the same level.      
 
 
@@ -178,10 +178,10 @@ Run the following:
 Where `max_missing` indicates the maximum missing data to retain a sample for the technical replicate comparison.       
 
 Save out the produced genind object, which contains only the best of the technical replicate samples:      
-`save(obj_nr_best, file = "02_input_data/obj_nr_best_2023-06-08.RData")`      
+`save(obj_nr_best, file = "02_input_data/obj_nr_best_<date>.RData")`      
 
 Note: if you need to restart at any future time, you can always reload this file by:     
-`load("02_input_data/obj_nr_best_2023-06-08.RData")`      
+`load("02_input_data/obj_nr_best_<date>.RData")`      
 
 **Outputs**      
 - obj_nr_best , a single sample per tech rep for population genetic analysis (below)

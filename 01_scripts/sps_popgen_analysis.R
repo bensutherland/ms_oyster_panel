@@ -2,17 +2,17 @@
 # Sutherland Bioinformatics
 # Initialized 2022-09-18
 
+#### 00. Set up ####
 # Source simple_pop_stats and choose Pacific oyster
-# Note: if already have run comp_tech_reps then do not clear and re-source, just use obj_nr_best
-
 
 #### 01. Load Data ####
-# Loads a genepop to a genind obj
-#load_genepop(datatype = "SNP") 
-# your data is now obj
-
-# If you are using data consolidated from multiple technical replicates, use obj_nr_best
+# Note: if using output of comp_tech_reps, load the RData and your data is obj_nr_best
+load("02_input_data/obj_nr_best_2023-05-01.RData")
 obj <- obj_nr_best
+
+# Otherwise, load the genepop and your data is obj
+#load_genepop(datatype = "SNP") 
+
 obj
 
 
