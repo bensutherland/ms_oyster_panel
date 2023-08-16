@@ -144,7 +144,7 @@ Note: clone amplitools and simple_pop_stats in the same parent directory as the 
 
 #### Data inputs:     
 - Multiple Ion Torrent VariantCaller output files (tab-delim but .xls suffix) (here) #TODO       
-
+Specifically, the manuscript analysis will use `R_2022_08_04_S5XL.xls` and `R_2022_10_07_S5XL.xls`.       
 
 ### 01. Load results from available amplicon sequencing VariantCaller outputs 
 Copy VariantCaller output files into the `amplitools/02_input_data` folder.     
