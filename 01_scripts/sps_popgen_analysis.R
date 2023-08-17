@@ -294,11 +294,12 @@ datatype <- "SNP"
 relatedness_plot(file = paste0("03_results/kinship_analysis_", date, ".Rdata"), same_pops = TRUE, plot_by = "codes", pdf_width = 7, pdf_height = 5)
 
 save.image("03_results/output_relatedness.Rdata")
+#load(file = "03_results/output_relatedness.Rdata")
 
-## inspect results
+## Inspect relatedness results
 gc()
 
-# Choose one of the following two input datasets (Atlantic or Pacific)
+# Load
 input.FN <- paste0("03_results/pairwise_relatedness_output_all_", date, ".txt")
 
 # Read in data
@@ -307,6 +308,11 @@ head(rel.df)
 
 # These are the contrasts in this data
 unique(rel.df$group)
+
+# If we ignore the groupings, and just look at the pairs of all individuals, what is the level that outlier is designated?
+boxplot(rel.df$ritland, las = 1)
+median(rel.df$ritland) # -0.0167
+min(boxplot.stats(rel.df$ritland)$out[boxplot.stats(rel.df$ritland)$out > median(rel.df$ritland)]) # 0.1489
 
 # Set variables of interest
 #popn <- "JPN"
@@ -323,8 +329,6 @@ compare.group <- paste0(substr(x = popn, 1,2), substr(x = popn, 1,2))
 all_inds.vec  <- c(rel.df$ind1.id, rel.df$ind2.id)
 uniq_inds.vec <- unique(all_inds.vec[grep(pattern = popn, x = all_inds.vec)])
 length(uniq_inds.vec)
-
-colnames(rel.df)
 
 # Select related stat
 statistic <- "ritland"
@@ -362,23 +366,51 @@ dev.off()
 
 # Then use the cutoff value to inspect the excel document to ID the pairs, removing one of every two pairs until no outlier pairs remain.
 
-#### WORKING HERE ####
-# Create list of indivs to drop
-# then proceed
+id_close_kin(cutoff = 0.23, statistic = "ritland")
+# Will operate on the latest pairwise relatedness oject in the results folder
+
+str(drop.list) # shows how many inds are selected to be dropped from each pop
+
+# Extract all IDs from drop list
+drop.inds <- NULL
+for(i in 1:length(drop.list)){
+  
+  drop.inds <- c(drop.inds, drop.list[[i]])
+  
+}
+
+
+drop_inds.df <- as.data.frame(drop.inds)
+head(drop_inds.df)
+drop_inds.df <- separate(data = drop_inds.df, col = "drop.inds", into = c("pop", "ind"), sep = "__", remove = T)
+drop.inds <- drop_inds.df$ind
+drop.inds
+
+keep.inds <- setdiff(indNames(obj), drop.inds)
+
+obj_purged_relatives <- obj[(keep.inds)]
+table(pop(obj_purged_relatives))
+
+table(pop(obj))
+
 
 #### 04. Analysis ####
 ## Multivariate
 # PCA from genind
-pca_from_genind(data = obj, PCs_ret = 4, colour_file = "00_archive/formatted_cols.csv")
+pca_from_genind(data = obj_purged_relatives, PCs_ret = 4, colour_file = "00_archive/formatted_cols.csv")
 
 # # DAPC from genind
 # dapc_from_genind(data = obj, plot_allele_loadings = TRUE, colour_file = "00_archive/formatted_cols.csv")
 
 ## Dendrogram
-make_tree(bootstrap = TRUE, boot_obj = obj, nboots = 10000, dist_metric = "edwards.dist", separated = FALSE)
+make_tree(bootstrap = TRUE, boot_obj = obj_purged_relatives, nboots = 10000, dist_metric = "edwards.dist", separated = FALSE)
 
 ## Genetic differentiation
-calculate_FST(format = "genind", dat = obj, separated = FALSE, bootstrap = TRUE)
+calculate_FST(format = "genind", dat = obj_purged_relatives, separated = FALSE, bootstrap = TRUE)
+
+
+#### HERE ####
+
 
 ## Private alleles
 regional_obj <- obj
