@@ -99,6 +99,8 @@ colnames(new_pop_colours) <- c("my.pops", "my.cols")
 my_colours <- rbind(my_colours, new_pop_colours)
 my_colours
 
+### TODO: change China to black colour to distinguish
+
 # Connect colours to empirical populations, which will exclude any that are not in the dataset
 colours <- merge(x = pops_in_genepop.df, y =  my_colours, by.x = "pops_in_genepop", by.y = "my.pops"
                  #, sort = F
@@ -314,55 +316,56 @@ boxplot(rel.df$ritland, las = 1)
 median(rel.df$ritland) # -0.0167
 min(boxplot.stats(rel.df$ritland)$out[boxplot.stats(rel.df$ritland)$out > median(rel.df$ritland)]) # 0.1489
 
-# Set variables of interest
-#popn <- "JPN"
-#popn <- "CHN"
-#popn <- "FRA"
-#popn <- "DPB"
-#popn <- "GUR"
-#popn <- "PEN"
-#popn <- "VIU"
-
-compare.group <- paste0(substr(x = popn, 1,2), substr(x = popn, 1,2))
-
-# How many unique inds are there in the selected pop? 
-all_inds.vec  <- c(rel.df$ind1.id, rel.df$ind2.id)
-uniq_inds.vec <- unique(all_inds.vec[grep(pattern = popn, x = all_inds.vec)])
-length(uniq_inds.vec)
-
-# Select related stat
-statistic <- "ritland"
-
-# Inspect same-on-same distribution of values
-print(paste0("Identifying outliers using the ", statistic, " statistic"))
-
-# How many?
-length(rel.df[rel.df$group==compare.group, statistic])
-
-obs_rel.vec <- rel.df[rel.df$group==compare.group, statistic]
-
-# Calculate 
-median(obs_rel.vec)
-boxplot.stats(obs_rel.vec)$out
-
-# Upper outliers
-boxplot.stats(obs_rel.vec)$out[boxplot.stats(obs_rel.vec)$out > median(obs_rel.vec)]
-num_outliers <- length(boxplot.stats(obs_rel.vec)$out[boxplot.stats(obs_rel.vec)$out > median(obs_rel.vec)])
-print(paste0("This relatedness statistic identifies ", num_outliers, " outlier pairs"))
-cutoff <- min(boxplot.stats(obs_rel.vec)$out[boxplot.stats(obs_rel.vec)$out > median(obs_rel.vec)])
-cutoff
-
-pdf(file = paste0("03_results/related_dist_", compare.group, "_", statistic, ".pdf")
-    , width = 9, height = 5)
-par(mfrow=c(1,2))
-boxplot(obs_rel.vec, las = 1, main = compare.group
-        , ylab = statistic)
-abline(h = cutoff, lty = 3)
-
-plot(obs_rel.vec, las = 1, main = compare.group
-     , ylab = statistic)
-abline(h = cutoff, lty = 3)
-dev.off()
+## Approach to investigate outliers
+# # Set variables of interest
+# #popn <- "JPN"
+# #popn <- "CHN"
+# #popn <- "FRA"
+# #popn <- "DPB"
+# #popn <- "GUR"
+# #popn <- "PEN"
+# #popn <- "VIU"
+# 
+# compare.group <- paste0(substr(x = popn, 1,2), substr(x = popn, 1,2))
+# 
+# # How many unique inds are there in the selected pop? 
+# all_inds.vec  <- c(rel.df$ind1.id, rel.df$ind2.id)
+# uniq_inds.vec <- unique(all_inds.vec[grep(pattern = popn, x = all_inds.vec)])
+# length(uniq_inds.vec)
+# 
+# # Select related stat
+# statistic <- "ritland"
+# 
+# # Inspect same-on-same distribution of values
+# print(paste0("Identifying outliers using the ", statistic, " statistic"))
+# 
+# # How many?
+# length(rel.df[rel.df$group==compare.group, statistic])
+# 
+# obs_rel.vec <- rel.df[rel.df$group==compare.group, statistic]
+# 
+# # Calculate 
+# median(obs_rel.vec)
+# boxplot.stats(obs_rel.vec)$out
+# 
+# # Upper outliers
+# boxplot.stats(obs_rel.vec)$out[boxplot.stats(obs_rel.vec)$out > median(obs_rel.vec)]
+# num_outliers <- length(boxplot.stats(obs_rel.vec)$out[boxplot.stats(obs_rel.vec)$out > median(obs_rel.vec)])
+# print(paste0("This relatedness statistic identifies ", num_outliers, " outlier pairs"))
+# cutoff <- min(boxplot.stats(obs_rel.vec)$out[boxplot.stats(obs_rel.vec)$out > median(obs_rel.vec)])
+# cutoff
+# 
+# pdf(file = paste0("03_results/related_dist_", compare.group, "_", statistic, ".pdf")
+#     , width = 9, height = 5)
+# par(mfrow=c(1,2))
+# boxplot(obs_rel.vec, las = 1, main = compare.group
+#         , ylab = statistic)
+# abline(h = cutoff, lty = 3)
+# 
+# plot(obs_rel.vec, las = 1, main = compare.group
+#      , ylab = statistic)
+# abline(h = cutoff, lty = 3)
+# dev.off()
 
 # Then use the cutoff value to inspect the excel document to ID the pairs, removing one of every two pairs until no outlier pairs remain.
 
@@ -407,10 +410,6 @@ make_tree(bootstrap = TRUE, boot_obj = obj_purged_relatives, nboots = 10000, dis
 
 ## Genetic differentiation
 calculate_FST(format = "genind", dat = obj_purged_relatives, separated = FALSE, bootstrap = TRUE)
-
-
-#### HERE ####
-
 
 ## Private alleles
 regional_obj <- obj
@@ -457,5 +456,6 @@ print("Your output is available as '03_results/rubias_output_SNP.txt")
 
 file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_all_rubias.txt", overwrite = T)
 
-# Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
+save.image(file = "03_results/completed_popgen_analysis.RData")
 
+# Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
