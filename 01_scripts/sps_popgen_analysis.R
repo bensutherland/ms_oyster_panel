@@ -408,8 +408,14 @@ pca_from_genind(data = obj_purged_relatives, PCs_ret = 4, colour_file = "00_arch
 ## Dendrogram
 make_tree(bootstrap = TRUE, boot_obj = obj_purged_relatives, nboots = 10000, dist_metric = "edwards.dist", separated = FALSE)
 
+## Drop low sample size pops
+table(pop(obj_purged_relatives))
+drop_pops(df = obj_purged_relatives, drop_by_pop_size = TRUE, min_indiv = 15)
+obj_pop_filt
+table(obj_pop_filt)
+
 ## Genetic differentiation
-calculate_FST(format = "genind", dat = obj_purged_relatives, separated = FALSE, bootstrap = TRUE)
+calculate_FST(format = "genind", dat = obj_pop_filt, separated = FALSE, bootstrap = TRUE)
 
 ## Private alleles
 regional_obj <- obj
@@ -457,6 +463,7 @@ print("Your output is available as '03_results/rubias_output_SNP.txt")
 file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_all_rubias.txt", overwrite = T)
 
 save.image(file = "03_results/completed_popgen_analysis.RData")
+#load(file = "03_results/completed_popgen_analysis.RData")
 
 # Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
 
