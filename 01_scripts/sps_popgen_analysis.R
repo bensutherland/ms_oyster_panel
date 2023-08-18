@@ -101,8 +101,6 @@ colnames(new_pop_colours) <- c("my.pops", "my.cols")
 my_colours <- rbind(my_colours, new_pop_colours)
 my_colours
 
-### TODO: change China to black colour to distinguish
-
 # Connect colours to empirical populations, which will exclude any that are not in the dataset
 colours <- merge(x = pops_in_genepop.df, y =  my_colours, by.x = "pops_in_genepop", by.y = "my.pops"
                  #, sort = F
@@ -248,55 +246,31 @@ write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote =
             , row.names = F, col.names = F
 )
 
-## Density plot stats
-# Do high FST markers have lower heterozygosity?
-test.df <- per_loc_stats.df
-head(test.df)
-test.df$elev.fst <- test.df$Fst > 0.05
-
-# Bimodal HOBS
-p <- ggplot(test.df, aes(x=Hobs)) +
-         geom_density()
-p
-
-# Relation between FST and HOBS?
-p <- ggplot(test.df, aes(x=Hobs, colour=elev.fst)) +
-         geom_density()
-p # does not appear to be different
-        
-            
-# Plot Fst by Hobs
-pdf(file = "per_locus_Fst_v_Hobs.pdf", width = 8, height = 5)
-plot(per_loc_stats.df$Fst, per_loc_stats.df$Hobs
-     , las = 1
-     , xlab = "Per locus FST"
-     , ylab = "Per locus HOBS"
-     , pch = 16
-     , cex = 0.85
-     )
-
-dev.off()
-
-
 
 ##### 03.5 per marker stats and filters #####
 ## Per locus statistics
 per_locus_stats(data = obj)
 head(per_loc_stats.df)
 
-pdf(file = "per_locus_Hobs.pdf", width = 8, height = 5) 
-plot(x = per_loc_stats.df$Hobs
-     , xlab = "Marker"
-     , ylab = "Observed Heterozygosity (Hobs)"
+## Density plot stats
+# Do high FST markers have lower heterozygosity?
+test.df <- per_loc_stats.df
+head(test.df)
+test.df$elev.fst <- test.df$Fst > 0.05
+
+# Plot Fst by Hobs
+pdf(file = "03_results/per_locus_Fst_v_Hobs.pdf", width = 8, height = 5)
+plot(per_loc_stats.df$Fst, per_loc_stats.df$Hobs
      , las = 1
+     , xlab = "Per locus FST"
+     , ylab = "Per locus HOBS"
      , pch = 16
      , cex = 0.85
-     )
+)
 
-abline(h = 0.5, lty = 3)
 dev.off()
 
-table(per_loc_stats.df$Hobs > 0.6) # only 1
+table(per_loc_stats.df$Hobs > 0.5)
 
 ## Optional for dropping Hobs > 0.5 markers ## 
 # # Which markers are greater than 0.5 heterozygosity? 
@@ -457,27 +431,31 @@ calculate_FST(format = "genind", dat = obj_pop_filt, separated = FALSE, bootstra
 
 
 ### Polymorphic loci per pop
+# Separate genind into individual pop genind
 my_pops.list <- seppop(x = obj, drop=TRUE)
+maf_cutoff <- 0.1
 
 pop_of_interest <- NULL; poly_loci.list <- list(); poly_loci_maf.list <- list()
 for(i in 1:length(my_pops.list)){
   
+  # Select the population, set variable
   pop_of_interest <- names(my_pops.list)[i]
   
+  # Drop monomorphic loci and store nloc in list
   print("Dropping non-polymorphic loci")
-  
   drop_loci(df = my_pops.list[[i]], drop_monomorphic = TRUE)
-  
   poly_loci.list[[pop_of_interest]] <- nLoc(obj_filt)
   
-  print("Dropping loci below MAF 0.01")
-  maf_filt(data = my_pops.list[[i]], maf = 0.1)
+  # Drop under MAF threshold and store nloc in list
+  print(paste0("Dropping loci below MAF ", maf_cutoff))
+  maf_filt(data = my_pops.list[[i]], maf = maf_cutoff)
   
   poly_loci_maf.list[[pop_of_interest]] <- nLoc(obj_maf_filt)
   
   
 }
 
+# View results
 poly_loci.list
 poly_loci_maf.list
 
