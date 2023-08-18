@@ -21,20 +21,20 @@ obj
 
 
 #### 02. Prepare Data ####
+##### 02.1 Manually assign population names based on samples present #####
 ## Create a list of individuals for manual addition of population
-indiv <- indNames(obj)
-indiv.df <- as.data.frame(indiv)
+indiv.df <- as.data.frame(indNames(obj))
+colnames(indiv.df) <- "indiv"
 head(indiv.df)
 
-# Separate constituent parts of indiv ID, as these are no longer needed (run, barcode, sample)
+# Separate components of indiv ID (i.e., run, barcode, sample)
 indiv.df <- separate(data = indiv.df, col = "indiv", into = c("run", "barcode", "indiv"), sep = "__", remove = T)
 head(indiv.df)
 
 # Use reduced indiv name as indname in genind
 indNames(obj) <- indiv.df$indiv
 
-## Additional uses of the indiv.df df
-# Determine how many indiv came from each run
+# How many samples from each run? 
 table(indiv.df$run)
 
 # Clean-up for write-out
@@ -52,7 +52,9 @@ write.table(x = indiv.df, file = "02_input_data/my_data_ind-to-pop.txt"
             , quote = F
             )
 
-# Manually annotate the output file above and populate it with your pop names (no spaces)
+# In folder above, *manually annotate* the output file above
+# , save with "_annot.txt" appended, populate with pop names (no spaces)
+
 # Load annotated df
 indiv_annot.df <- read.table(file = "02_input_data/my_data_ind-to-pop_annot.txt"
                            , header = T, sep = "\t"
@@ -84,7 +86,7 @@ tail(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
 pop(obj) <- indiv_annot_in_order.df$pop.y
 table((pop(obj)))
 
-
+##### 02.2 Add in population colours #####
 ## Population colours
 pops_in_genepop <- unique(pop(obj))
 pops_in_genepop.df <- as.data.frame(pops_in_genepop)
@@ -114,30 +116,36 @@ rm(new_pop_colours)
 
 
 #### 03. Characterize missing data (indiv and loci) and filter ####
+# Set variables to use for both plots
+plot_width  <- 8
+plot_height <- 5
+plot_cex    <- 0.85
+plot_pch    <- 16
+
 ##### 03.1 Individuals - missing data #####
 percent_missing_by_ind(df = obj)
 head(missing_data.df)
 
-# Add pop IDs to the missing data
+# Add pop IDs to the missing data df
 missing_data.df <- merge(x = missing_data.df, y = indiv_annot.df, by.x = "ind", by.y = "indiv", all.x = T)
 head(missing_data.df)
 head(indiv_annot.df)
 
-# Add colours to the missing data
+# Add colours to the missing data df
 colours
 plot_cols.df <- merge(x = missing_data.df, y = colours, by.x = "pop", by.y = "pops_in_genepop", all.x = T
                       , sort = F
                       )
 
 # Plot missing data by individual
-pdf(file = "03_results/geno_rate_by_ind.pdf", width = 8, height = 5)
+pdf(file = "03_results/geno_rate_by_ind.pdf", width = plot_width, height = plot_height)
 plot(100 * (1 - plot_cols.df$ind.per.missing), ylab = "Genotyping rate (%)"
      , col = plot_cols.df$my.cols
      , las = 1
      , xlab = "Individual"
      , ylim = c(0,100)
-     , pch=16
-     , cex = 1
+     , pch=plot_pch
+     , cex = plot_cex
      )
 
 abline(h = 50, lty = 3)
@@ -194,11 +202,11 @@ for(i in 1:(nrow(obj.df))){
 
 
 # Plot
-pdf(file = "03_results/geno_rate_by_marker.pdf", width = 8, height = 5)
+pdf(file = "03_results/geno_rate_by_marker.pdf", width = plot_width, height = plot_height)
 plot(100 * (1- obj.df$marker.per.missing), xlab = "Marker", ylab = "Genotyping rate (%)", las = 1
      , ylim = c(0,100)
-     , pch = 16
-     , cex = 0.85
+     , pch = plot_pch
+     , cex = plot_cex
      )
 abline(h = 50
        #, col = "grey60"
@@ -239,6 +247,36 @@ write.table(x = inds, file = "03_results/retained_individuals.txt", sep = "\t", 
 write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote = F
             , row.names = F, col.names = F
 )
+
+## Density plot stats
+# Do high FST markers have lower heterozygosity?
+test.df <- per_loc_stats.df
+head(test.df)
+test.df$elev.fst <- test.df$Fst > 0.05
+
+# Bimodal HOBS
+p <- ggplot(test.df, aes(x=Hobs)) +
+         geom_density()
+p
+
+# Relation between FST and HOBS?
+p <- ggplot(test.df, aes(x=Hobs, colour=elev.fst)) +
+         geom_density()
+p # does not appear to be different
+        
+            
+# Plot Fst by Hobs
+pdf(file = "per_locus_Fst_v_Hobs.pdf", width = 8, height = 5)
+plot(per_loc_stats.df$Fst, per_loc_stats.df$Hobs
+     , las = 1
+     , xlab = "Per locus FST"
+     , ylab = "Per locus HOBS"
+     , pch = 16
+     , cex = 0.85
+     )
+
+dev.off()
+
 
 
 ##### 03.5 per marker stats and filters #####
@@ -416,6 +454,33 @@ table(obj_pop_filt)
 
 ## Genetic differentiation
 calculate_FST(format = "genind", dat = obj_pop_filt, separated = FALSE, bootstrap = TRUE)
+
+
+### Polymorphic loci per pop
+my_pops.list <- seppop(x = obj, drop=TRUE)
+
+pop_of_interest <- NULL; poly_loci.list <- list(); poly_loci_maf.list <- list()
+for(i in 1:length(my_pops.list)){
+  
+  pop_of_interest <- names(my_pops.list)[i]
+  
+  print("Dropping non-polymorphic loci")
+  
+  drop_loci(df = my_pops.list[[i]], drop_monomorphic = TRUE)
+  
+  poly_loci.list[[pop_of_interest]] <- nLoc(obj_filt)
+  
+  print("Dropping loci below MAF 0.01")
+  maf_filt(data = my_pops.list[[i]], maf = 0.1)
+  
+  poly_loci_maf.list[[pop_of_interest]] <- nLoc(obj_maf_filt)
+  
+  
+}
+
+poly_loci.list
+poly_loci_maf.list
+
 
 ## Private alleles
 regional_obj <- obj
