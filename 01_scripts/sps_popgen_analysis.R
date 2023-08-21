@@ -281,7 +281,29 @@ table(per_loc_stats.df$Hobs > 0.5)
 ## /end/ Optional for dropping ##
 
 ## Hardy-Weinberg
-hwe_eval(data = obj, alpha = 0.01)
+
+# Remove cultured CHN samples, previously unknown but now noted as QDC samples
+QDC.inds <- c("1601", "1602", "1603", "1604", "1605", "1606", "1607", "1608")
+keep.inds <- setdiff(x = indNames(obj), y = QDC.inds)
+obj.no.QDC <- obj[keep.inds]
+
+hwe_eval(data = obj.no.QDC, alpha = 0.01)
+
+# Identify hwe outliers
+col.oi <- grep(pattern = "Pr", x = colnames(per_locus_hwe_JPN.df))
+hwe_outlier_mname_JPN.vec <- per_locus_hwe_JPN.df[per_locus_hwe_JPN.df[, col.oi] < 0.01, "mname"]
+hwe_outlier_mname_PEN.vec <- per_locus_hwe_PEN.df[per_locus_hwe_PEN.df[, col.oi] < 0.01, "mname"]
+hwe_outlier_mname_FRA.vec <- per_locus_hwe_FRA.df[per_locus_hwe_FRA.df[, col.oi] < 0.01, "mname"]
+hwe_outlier_mname_CHN.vec <- per_locus_hwe_CHN.df[per_locus_hwe_CHN.df[, col.oi] < 0.01, "mname"]
+
+length(hwe_outlier_mname_JPN.vec)
+length(hwe_outlier_mname_PEN.vec)
+length(hwe_outlier_mname_FRA.vec)
+length(hwe_outlier_mname_CHN.vec)
+
+hwe_outlier.df <- as.data.frame(sort(table(c(hwe_outlier_mname_JPN.vec, hwe_outlier_mname_PEN.vec, hwe_outlier_mname_FRA.vec, hwe_outlier_mname_CHN.vec)), decreasing = T))
+colnames(hwe_outlier.df) <- c("mname", "freq")
+write.table(x = hwe_outlier.df, file = "03_results/hwe_outlier_summary.txt", quote = F, sep = "\t", row.names = F)
 
 
 ##### 03.5 Post-all filters #####
@@ -401,6 +423,11 @@ drop_inds.df <- separate(data = drop_inds.df, col = "drop.inds", into = c("pop",
 drop.inds <- drop_inds.df$ind
 drop.inds
 
+# Remove cultured CHN samples, previously unknown but now noted as QDC samples
+QDC.inds
+drop.inds <- c(drop.inds, QDC.inds)
+drop.inds <- unique(drop.inds)
+
 keep.inds <- setdiff(indNames(obj), drop.inds)
 
 obj_purged_relatives <- obj[(keep.inds)]
@@ -424,7 +451,7 @@ make_tree(bootstrap = TRUE, boot_obj = obj_purged_relatives, nboots = 10000, dis
 table(pop(obj_purged_relatives))
 drop_pops(df = obj_purged_relatives, drop_by_pop_size = TRUE, min_indiv = 15)
 obj_pop_filt
-table(obj_pop_filt)
+table(pop(obj_pop_filt))
 
 ## Genetic differentiation
 calculate_FST(format = "genind", dat = obj_pop_filt, separated = FALSE, bootstrap = TRUE)
