@@ -168,9 +168,10 @@ This will output, per input file, a .gen file in `02_input_data/prepped_genepops
 
 
 ### 02. Compare technical replicate samples and retain the best replicates 
-Copy the output `*.gen` files from above into `simple_pop_stats/02_input_data`.        
+From amplitools, copy prepared `*.gen` files into `simple_pop_stats`:       
+`cp 02_input_data/prepped_genepops/*.gen ../simple_pop_stats/02_input_data/`        
 
-In Rstudio clear the workspace, then source `simple_pop_stats/01_scripts/simple_pop_stats_start.R`     
+Open `simple_pop_stats/01_scripts/simple_pop_stats_start.R` in RStudio, clear space, then source the script.     
 Also source the development script `simple_pop_stats/01_scripts/dev/comp_tech_reps.R`       
 
 Run the following:      
@@ -183,14 +184,13 @@ Save out the produced genind object, which contains only the best of the technic
 Note: if you need to restart at any future time, you can always reload this file by:     
 `load("02_input_data/obj_nr_best_<date>.RData")`      
 
-**Outputs**      
-- obj_nr_best , a single sample per tech rep for population genetic analysis (below)
-- #TODO add other items
+This will output an RData file with only unique samples as `02_input_data/obj_nr_best_<date>.RData`.      
 
 
 ### 03. General population genetic characterization of pilot study
-With `simple_pop_stats` functions still sourced (i.e., not cleared space), in Rstudio, run interactively `ms_oyster_panel/01_scripts/sps_popgen_analysis.R`        
-note: if you need to reload the `obj_nr_best` see above       
+Open `simple_pop_stats/01_scripts/simple_pop_stats_start.R` in RStudio, clear space, then source the script.     
+Open `ms_oyster_panel/01_scripts/sps_popgen_analysis.R`, and run interactively in RStudio.      
+
 note: if you are not running tech replicates, can use `load_genepop(datatype="SNP")` to select your genepop
 
 Follow the instructions of the script to:     
