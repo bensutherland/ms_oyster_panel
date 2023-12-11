@@ -145,11 +145,10 @@ Create a folder that contains both `amplitools` and `simple_pop_stats`, as both 
 
 #### Data inputs:     
 - VariantCaller output files (tab-delim but .xls suffix) from [FigShare](https://doi.org/10.6084/m9.figshare.23646471.v1)       
-Specifically, the manuscript analysis will use `R_2022_08_04_S5XL.xls` and `R_2022_10_07_S5XL.xls`.       
 
-### 01. Load results from available amplicon sequencing VariantCaller outputs 
-Copy VariantCaller output files into the `amplitools/02_input_data` folder.     
+Put `R_2022_08_04_S5XL.xls` and `R_2022_10_07_S5XL.xls` in `amplitools/02_input_data`       
 
+### 01. Use amplitools to prepare input data
 Open `amplitools/01_scripts/00_initiator.R` in Rstudio and source the script. This will load amplitools.       
 
 Open `amplitools/01_scripts/demo_analysis.R` for a demonstration analysis (also shown in brief below).      
