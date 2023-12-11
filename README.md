@@ -159,13 +159,12 @@ From within R, convert proton results to genepop results using the following amp
 proton_to_genepop(neg_control="BLANK")         
 # neg_control is a string found in only negative control samples to filter them out
 ```
-This will output, per input file, a .txt file in `02_input_data/prepped_matrices/`      
+This will output, per input file, a .txt file in `02_input_data/prepped_matrices/`.      
 
 Finalize the genepop by using the following script on each prepared matrix:       
 `amplitools/01_scripts/format_genepop.sh 02_input_data/prepped_matrices/<filename>`        
 
-**Output**
-- `*.gen` files prepared in `amplitools/02_input_data/prepped_genepops`     
+This will output, per input file, a .gen file in `02_input_data/prepped_genepops/`.      
 
 
 ### 02. Compare technical replicate samples and retain the best replicates 
