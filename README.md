@@ -138,8 +138,9 @@ Currently implemented in an interactive Rscript `100-bowtie2-amplicon-mapping-ro
 #### Requirements:      
 - [amplitools](https://github.com/bensutherland/amplitools)       
 - [simple_pop_stats](https://github.com/bensutherland/simple_pop_stats)      
-- R             
-Note: clone amplitools and simple_pop_stats in the same parent directory as the present repository so that they are all at the same level.      
+- [R](https://www.r-project.org/)             
+
+Create a folder that contains both `amplitools` and `simple_pop_stats`, as both of these repositories will be used to analyze the data.       
 
 
 #### Data inputs:     
