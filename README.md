@@ -1,5 +1,5 @@
 # Pacific oyster panel design and testing
-Code to support the design and testing an amplicon panel for Pacific oyster (_Crassostrea gigas_), designed for the use of the authors and associated [manuscript](#toadd), and comes with no guarantees for usefulness for any other purposes.       
+Code to support the design and testing an amplicon panel for Pacific oyster (_Crassostrea gigas_), designed for the use of the authors and associated [manuscript](https://www.biorxiv.org/content/10.1101/2023.08.26.554329v1), and comes with no guarantees for usefulness for any other purposes.       
 
 Requires Linux or Mac OS, and all shell scripts are run from the main directory.    
 
