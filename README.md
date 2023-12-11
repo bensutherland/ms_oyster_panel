@@ -139,6 +139,7 @@ Currently implemented in an interactive Rscript `100-bowtie2-amplicon-mapping-ro
 - [amplitools](https://github.com/bensutherland/amplitools)       
 - [simple_pop_stats](https://github.com/bensutherland/simple_pop_stats)      
 - [R](https://www.r-project.org/)             
+- [RStudio](https://posit.co/download/rstudio-desktop/)          
 
 Create a folder that contains both `amplitools` and `simple_pop_stats`, as both of these repositories will be used to analyze the data.       
 
@@ -146,7 +147,7 @@ Create a folder that contains both `amplitools` and `simple_pop_stats`, as both 
 #### Data inputs:     
 - VariantCaller output files (tab-delim but .xls suffix) from [FigShare](https://doi.org/10.6084/m9.figshare.23646471.v1)       
 
-Put `R_2022_08_04_S5XL.xls` and `R_2022_10_07_S5XL.xls` in `amplitools/02_input_data`       
+Put `R_2022_08_04_S5XL.xls` and `R_2022_10_07_S5XL.xls` into `amplitools/02_input_data`       
 
 ### 01. Use amplitools to prepare input data
 Open `amplitools/01_scripts/00_initiator.R` in Rstudio and source the script. This will load amplitools.       
@@ -155,16 +156,16 @@ Open `amplitools/01_scripts/demo_analysis.R` for a demonstration analysis (also 
 
 From within R, convert proton results to genepop results using the following amplitools script:      
 ```
-proton_to_genepop(hotspot_only=TRUE, neg_control="BLANK")         
-# hotspot_only (T/F) indicates whether only hotspot variants will be considered, or all variants including novel variants
+proton_to_genepop(neg_control="BLANK")         
 # neg_control is a string found in only negative control samples to filter them out
 ```
+This will output, per input file, a .txt file in `02_input_data/prepped_matrices/`      
 
-Then from the amplitools main directory, finalize the genepop format using the following for each file:      
-`amplitools/01_scripts/format_genepop.sh <filename>`        
+Finalize the genepop by using the following script on each prepared matrix:       
+`amplitools/01_scripts/format_genepop.sh 02_input_data/prepped_matrices/<filename>`        
 
-**Outputs**
-- `*.gen` files prepared in `amplitools/02_input_data/prepped_matrices`     
+**Output**
+- `*.gen` files prepared in `amplitools/02_input_data/prepped_genepops`     
 
 
 ### 02. Compare technical replicate samples and retain the best replicates 
