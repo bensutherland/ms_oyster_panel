@@ -325,11 +325,20 @@ write.csv(x = colours, file = "00_archive/formatted_cols.csv", quote = F, row.na
 # Preserve all data before moving into parentage analysis
 obj.bck <- obj
 
+# Save output
+save.image("03_results/output_post-filters.Rdata")
+# Note: can go from here to analyze the relatives and post-purged sibs analysis in the script
+# 01_scripts/sps_popgen_analysis_part_2_relatedness.R
+
+# Or continue below
+
+
 #### 04. Parentage: convert genepop to Rubias format ####
 # Limit the data to only include the VIU pops
 separated_pops <- seppop(obj)
 obj_parentage <- repool(separated_pops$VIU_F0, separated_pops$VIU_F1, separated_pops$VIU_F2)
 table(pop(obj_parentage))
+obj <- obj_parentage
 
 # Need to create a tab-delim stock code file in format of e.g., 
 ## row 1: collection	repunit
@@ -348,27 +357,19 @@ micro_stock_code.FN <- "00_archive/stock_code.txt"
 
 ## Convert genepop to rubias
 datatype <- "SNP" # required for genepop_to_rubias_SNP
-as.data.frame(cbind(indNames(obj), as.character(pop(obj)))) # Note: BR27 should be VIU_F0 [confirmed]
-obj # the current analysis object
+#as.data.frame(cbind(indNames(obj), as.character(pop(obj))))
+#obj # the current analysis object
 
-genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN)
+genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
+                      , pop_map.FN = "02_input_data/my_data_ind-to-pop_annot.txt")
 
 print("Your output is available as '03_results/rubias_output_SNP.txt")
 
 file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_all_rubias.txt", overwrite = T)
 
 save.image(file = "03_results/completed_popgen_analysis.RData")
-#load(file = "03_results/completed_popgen_analysis.RData")
 
-# Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
-
+# Using this output, move to "amplitools/01_scripts/demo_analysis.R", and run the ckmr script
 
 
-# Save output
-save.image("03_results/output_post-filters.Rdata")
-
-# Note: can go from here to analyze the relatives and post-purged sibs analysis in the script
-# 01_scripts/sps_popgen_analysis_part_2_relatedness.R
-
-# Or continue below
 
