@@ -5,18 +5,21 @@
 #### 00. Set up ####
 # Source simple_pop_stats and choose Pacific oyster
 
+# Set variables
+max_percent_missing <- 0.3
+
 #### 01. Load Data ####
 # Note: if using output of comp_tech_reps, load the RData and your data is obj_nr_best
 input.FN <- head(sort(list.files(path = "02_input_data/", pattern = "obj_nr_best", full.names = T), decreasing = T), n = 1)
 load(input.FN)
 
 obj_nr_best 
-pop(obj_nr_best) # note that all pop attributes are 'unkn' currently, they will be added in the script below
+unique(pop(obj_nr_best)) # all pop attrib currently 'unkn', will be added below
 obj <- obj_nr_best
+rm(obj_nr_best)
 
 # Otherwise, load the genepop and your data is obj
 #load_genepop(datatype = "SNP") 
-
 obj
 
 
@@ -160,7 +163,7 @@ obj.df <- missing_data.df
 head(obj.df)
 
 ## Filter individuals by genotyping rate 
-keep <- obj.df[obj.df$ind.per.missing < 0.5, "ind"]
+keep <- obj.df[obj.df$ind.per.missing < max_percent_missing, "ind"]
 
 length(keep)
 nInd(obj)
@@ -172,7 +175,6 @@ table(pop(obj.filt))
 
 ##### 03.2 Loci - missing data #####
 # Filter loci based on missing data
-### TODO: this should be generalized into sps ###
 obj.df <- genind2df(obj.filt)
 obj.df[1:5,1:5]
 obj.df <- t(obj.df)
@@ -184,13 +186,14 @@ str(obj.df)
 
 obj.df <- as.data.frame(obj.df)
 dim(obj.df)
-str(obj.df)
+#str(obj.df)
 obj.df[1:5,1:5] # See top left of file
 obj.df[(dim(obj.df)[1]-5):dim(obj.df)[1], (dim(obj.df)[2]-5):dim(obj.df)[2]] # See bottom right of file
 
 # Add collector col
 obj.df$marker.per.missing <- NA
 
+# Loop across df, checking each row for the number of NAs and dividing by the total number of markers in the df
 for(i in 1:(nrow(obj.df))){
   
   # Per marker                      sum all NAs for the marker, divide by total number markers
@@ -212,23 +215,25 @@ abline(h = 50
 dev.off()
 
 # Filter
-keep <- rownames(obj.df[obj.df$marker.per.missing < 0.5, ])
+keep <- rownames(obj.df[obj.df$marker.per.missing < max_percent_missing, ])
 
 # How many loci were removed? 
 nLoc(obj.filt)
-nLoc(obj.filt) - length(keep)
+print(paste0("Dropping ", (nLoc(obj.filt) - length(keep)), " markers"))
 
 # Drop loci from genind
 obj.all.filt <- obj.filt[, loc=keep]
 
 # Rename back to obj
 obj <- obj.all.filt
-
+rm(obj.all.filt)
 
 ##### 03.3 Drop monomorphic loci #####
 drop_loci(drop_monomorphic = TRUE)
 obj <- obj_filt
-
+rm(obj_filt)
+rm(obj.filt)
+gc()
 
 ##### 03.4 Post-QC info collection #####
 obj
@@ -251,12 +256,13 @@ write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote =
 ## Per locus statistics
 per_locus_stats(data = obj)
 head(per_loc_stats.df)
+nrow(per_loc_stats.df)
+
 
 ## Density plot stats
 # Do high FST markers have lower heterozygosity?
-test.df <- per_loc_stats.df
-head(test.df)
-test.df$elev.fst <- test.df$Fst > 0.05
+head(per_loc_stats.df)
+table(per_loc_stats.df$Fst > 0.05)
 
 # Plot Fst by Hobs
 pdf(file = "03_results/per_locus_Fst_v_Hobs.pdf", width = 8, height = 5)
@@ -270,6 +276,7 @@ plot(per_loc_stats.df$Fst, per_loc_stats.df$Hobs
 
 dev.off()
 
+# How many loci have more than 0.5 HOBS? 
 table(per_loc_stats.df$Hobs > 0.5)
 
 ## Optional for dropping Hobs > 0.5 markers ## 
@@ -280,7 +287,7 @@ table(per_loc_stats.df$Hobs > 0.5)
 # obj
 ## /end/ Optional for dropping ##
 
-## Hardy-Weinberg
+## Hardy-Weinberg, only on wild samples though ##
 
 # Remove cultured CHN samples, previously unknown but now noted as QDC samples
 QDC.inds <- c("1601", "1602", "1603", "1604", "1605", "1606", "1607", "1608")
@@ -289,7 +296,7 @@ obj.no.QDC <- obj[keep.inds]
 
 hwe_eval(data = obj.no.QDC, alpha = 0.01)
 
-# Identify hwe outliers
+# Identify hwe outliers in the 'wild' pops
 col.oi <- grep(pattern = "Pr", x = colnames(per_locus_hwe_JPN.df))
 hwe_outlier_mname_JPN.vec <- per_locus_hwe_JPN.df[per_locus_hwe_JPN.df[, col.oi] < 0.01, "mname"]
 hwe_outlier_mname_PEN.vec <- per_locus_hwe_PEN.df[per_locus_hwe_PEN.df[, col.oi] < 0.01, "mname"]
@@ -301,8 +308,11 @@ length(hwe_outlier_mname_PEN.vec)
 length(hwe_outlier_mname_FRA.vec)
 length(hwe_outlier_mname_CHN.vec)
 
+# Collect the names of the HW deviators
 hwe_outlier.df <- as.data.frame(sort(table(c(hwe_outlier_mname_JPN.vec, hwe_outlier_mname_PEN.vec, hwe_outlier_mname_FRA.vec, hwe_outlier_mname_CHN.vec)), decreasing = T))
 colnames(hwe_outlier.df) <- c("mname", "freq")
+head(hwe_outlier.df, n = 20)
+nrow(hwe_outlier.df)
 write.table(x = hwe_outlier.df, file = "03_results/hwe_outlier_summary.txt", quote = F, sep = "\t", row.names = F)
 
 
@@ -312,200 +322,15 @@ colours
 colnames(x = colours) <- c("collection", "colour")
 write.csv(x = colours, file = "00_archive/formatted_cols.csv", quote = F, row.names = F)
 
+# Preserve all data before moving into parentage analysis
+obj.bck <- obj
 
-##### 03.6 Relatedness ####
-## Identify putative close relatives
-# the relatedness script will use the first two values of each individual as the grouping factor, 
-# so we need to rename individuals as per their pop IDs
-obj.relatedness <- obj
-indNames(obj.relatedness) <- paste0(pop(obj), "__", indNames(obj))
-indNames(obj.relatedness)
+#### 04. Parentage: convert genepop to Rubias format ####
+# Limit the data to only include the VIU pops
+separated_pops <- seppop(obj)
+obj_parentage <- repool(separated_pops$VIU_F0, separated_pops$VIU_F1, separated_pops$VIU_F2)
+table(pop(obj_parentage))
 
-# Calculate inter-individual relatedness
-relatedness_calc(data = obj.relatedness, datatype = "SNP") # will output as "03_results/kinship_analysis_<date>.Rdata"
-date <- format(Sys.time(), "%Y-%m-%d")
-datatype <- "SNP"
-
-# Plot
-relatedness_plot(file = paste0("03_results/kinship_analysis_", date, ".Rdata"), same_pops = TRUE, plot_by = "codes", pdf_width = 7, pdf_height = 5)
-
-save.image("03_results/output_relatedness.Rdata")
-#load(file = "03_results/output_relatedness.Rdata")
-
-## Inspect relatedness results
-gc()
-
-# Load
-input.FN <- paste0("03_results/pairwise_relatedness_output_all_", date, ".txt")
-
-# Read in data
-rel.df <- read.table(file = input.FN, header = T, sep = "\t")
-head(rel.df)
-
-# These are the contrasts in this data
-unique(rel.df$group)
-
-# If we ignore the groupings, and just look at the pairs of all individuals, what is the level that outlier is designated?
-boxplot(rel.df$ritland, las = 1)
-median(rel.df$ritland) # -0.0167
-min(boxplot.stats(rel.df$ritland)$out[boxplot.stats(rel.df$ritland)$out > median(rel.df$ritland)]) # 0.1489
-
-## Approach to investigate outliers
-# # Set variables of interest
-# #popn <- "JPN"
-# #popn <- "CHN"
-# #popn <- "FRA"
-# #popn <- "DPB"
-# #popn <- "GUR"
-# #popn <- "PEN"
-# #popn <- "VIU"
-# 
-# compare.group <- paste0(substr(x = popn, 1,2), substr(x = popn, 1,2))
-# 
-# # How many unique inds are there in the selected pop? 
-# all_inds.vec  <- c(rel.df$ind1.id, rel.df$ind2.id)
-# uniq_inds.vec <- unique(all_inds.vec[grep(pattern = popn, x = all_inds.vec)])
-# length(uniq_inds.vec)
-# 
-# # Select related stat
-# statistic <- "ritland"
-# 
-# # Inspect same-on-same distribution of values
-# print(paste0("Identifying outliers using the ", statistic, " statistic"))
-# 
-# # How many?
-# length(rel.df[rel.df$group==compare.group, statistic])
-# 
-# obs_rel.vec <- rel.df[rel.df$group==compare.group, statistic]
-# 
-# # Calculate 
-# median(obs_rel.vec)
-# boxplot.stats(obs_rel.vec)$out
-# 
-# # Upper outliers
-# boxplot.stats(obs_rel.vec)$out[boxplot.stats(obs_rel.vec)$out > median(obs_rel.vec)]
-# num_outliers <- length(boxplot.stats(obs_rel.vec)$out[boxplot.stats(obs_rel.vec)$out > median(obs_rel.vec)])
-# print(paste0("This relatedness statistic identifies ", num_outliers, " outlier pairs"))
-# cutoff <- min(boxplot.stats(obs_rel.vec)$out[boxplot.stats(obs_rel.vec)$out > median(obs_rel.vec)])
-# cutoff
-# 
-# pdf(file = paste0("03_results/related_dist_", compare.group, "_", statistic, ".pdf")
-#     , width = 9, height = 5)
-# par(mfrow=c(1,2))
-# boxplot(obs_rel.vec, las = 1, main = compare.group
-#         , ylab = statistic)
-# abline(h = cutoff, lty = 3)
-# 
-# plot(obs_rel.vec, las = 1, main = compare.group
-#      , ylab = statistic)
-# abline(h = cutoff, lty = 3)
-# dev.off()
-
-# Then use the cutoff value to inspect the excel document to ID the pairs, removing one of every two pairs until no outlier pairs remain.
-
-id_close_kin(cutoff = 0.23, statistic = "ritland")
-# Will operate on the latest pairwise relatedness oject in the results folder
-
-str(drop.list) # shows how many inds are selected to be dropped from each pop
-
-# Extract all IDs from drop list
-drop.inds <- NULL
-for(i in 1:length(drop.list)){
-  
-  drop.inds <- c(drop.inds, drop.list[[i]])
-  
-}
-
-
-drop_inds.df <- as.data.frame(drop.inds)
-head(drop_inds.df)
-drop_inds.df <- separate(data = drop_inds.df, col = "drop.inds", into = c("pop", "ind"), sep = "__", remove = T)
-drop.inds <- drop_inds.df$ind
-drop.inds
-
-# Remove cultured CHN samples, previously unknown but now noted as QDC samples
-QDC.inds
-drop.inds <- c(drop.inds, QDC.inds)
-drop.inds <- unique(drop.inds)
-
-keep.inds <- setdiff(indNames(obj), drop.inds)
-
-obj_purged_relatives <- obj[(keep.inds)]
-table(pop(obj_purged_relatives))
-
-table(pop(obj))
-
-
-#### 04. Analysis ####
-## Multivariate
-# PCA from genind
-pca_from_genind(data = obj_purged_relatives, PCs_ret = 4, colour_file = "00_archive/formatted_cols.csv")
-
-# # DAPC from genind
-# dapc_from_genind(data = obj, plot_allele_loadings = TRUE, colour_file = "00_archive/formatted_cols.csv")
-
-## Dendrogram
-make_tree(bootstrap = TRUE, boot_obj = obj_purged_relatives, nboots = 10000, dist_metric = "edwards.dist", separated = FALSE)
-
-## Drop low sample size pops
-table(pop(obj_purged_relatives))
-drop_pops(df = obj_purged_relatives, drop_by_pop_size = TRUE, min_indiv = 15)
-obj_pop_filt
-table(pop(obj_pop_filt))
-
-## Genetic differentiation
-calculate_FST(format = "genind", dat = obj_pop_filt, separated = FALSE, bootstrap = TRUE)
-
-
-### Polymorphic loci per pop
-# Separate genind into individual pop genind
-my_pops.list <- seppop(x = obj, drop=TRUE)
-maf_cutoff <- 0.1
-
-pop_of_interest <- NULL; poly_loci.list <- list(); poly_loci_maf.list <- list()
-for(i in 1:length(my_pops.list)){
-  
-  # Select the population, set variable
-  pop_of_interest <- names(my_pops.list)[i]
-  
-  # Drop monomorphic loci and store nloc in list
-  print("Dropping non-polymorphic loci")
-  drop_loci(df = my_pops.list[[i]], drop_monomorphic = TRUE)
-  poly_loci.list[[pop_of_interest]] <- nLoc(obj_filt)
-  
-  # Drop under MAF threshold and store nloc in list
-  print(paste0("Dropping loci below MAF ", maf_cutoff))
-  maf_filt(data = my_pops.list[[i]], maf = maf_cutoff)
-  
-  poly_loci_maf.list[[pop_of_interest]] <- nLoc(obj_maf_filt)
-  
-  
-}
-
-# View results
-poly_loci.list
-poly_loci_maf.list
-
-
-## Private alleles
-regional_obj <- obj
-
-# Combine related pops to query private alleles at regional level
-unique(pop(regional_obj))
-pop(regional_obj) <- gsub(pattern = "VIU_F0|VIU_F1|VIU_F2", replacement = "VIU", x = pop(regional_obj)) # combine VIU
-pop(regional_obj) <- gsub(pattern = "PEN|FRA|JPN", replacement = "JPN", x = pop(regional_obj))              # combine JPN lineage
-unique(pop(regional_obj))
-
-pa <- private_alleles(gid = regional_obj)
-write.csv(x = pa, file = "03_results/private_alleles.csv", quote = F)
-
-save.image(file = "03_results/post-filters_genind_and_enviro.RData")
-
-# Confirm pops are as expected in obj
-as.data.frame(cbind(indNames(obj), as.character(pop(obj))))
-
-
-####### Convert genepop to Rubias format #####
 # Need to create a tab-delim stock code file in format of e.g., 
 ## row 1: collection	repunit
 ## row 2: boundary_bay	lower_mainland
@@ -538,32 +363,12 @@ save.image(file = "03_results/completed_popgen_analysis.RData")
 # Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
 
 
-# Additional analysis of the per loc stats related to the reason for selecting markers
-perloc.FN <- "./03_results/per_locus_stats_2023-08-16.txt"
-marker_reason.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/ms_oyster_panel_used_for_design_2022-02-07/04_extract_loci/selected_mnames.csv"
 
-perloc.df <- read.table(file = perloc.FN, header = T, sep = "\t")
-head(perloc.df)
+# Save output
+save.image("03_results/output_post-filters.Rdata")
 
-reason.df <- read.table(file = marker_reason.FN, header = F, sep = ",")
-colnames(reason.df) <- c("mname", "reason")
-reason.df <- as.data.frame(reason.df)
-head(reason.df)
+# Note: can go from here to analyze the relatives and post-purged sibs analysis in the script
+# 01_scripts/sps_popgen_analysis_part_2_relatedness.R
 
-reason.df <- separate(data = reason.df, col = "mname"
-                      , into = c("mname", "pos", "nucl"), sep = "_"
-                      , remove = TRUE
-                      )
-head(reason.df)
-reason.df <- reason.df[,c("mname", "reason")]
-head(reason.df)
+# Or continue below
 
-# Combine
-all.df <- merge(x = perloc.df, y = reason.df, by = "mname", all.x = T)
-head(all.df)
-
-table(all.df[all.df$Hobs > 0.25, "reason"])
-length(all.df[all.df$Hobs > 0.25, "reason"])
-
-table(all.df[all.df$Hobs <= 0.25, "reason"])
-length(all.df[all.df$Hobs <= 0.25, "reason"])
