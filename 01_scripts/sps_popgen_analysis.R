@@ -7,6 +7,7 @@
 
 # Set variables
 max_percent_missing <- 0.3
+correct_ids <- TRUE
 
 #### 01. Load Data ####
 # Note: if using output of comp_tech_reps, load the RData and your data is obj_nr_best
@@ -34,16 +35,43 @@ head(indiv.df)
 indiv.df <- separate(data = indiv.df, col = "indiv", into = c("run", "barcode", "indiv"), sep = "__", remove = T)
 head(indiv.df)
 
-# Use reduced indiv name as indname in genind
-indNames(obj) <- indiv.df$indiv
-
 # How many samples from each run? 
 table(indiv.df$run)
 
-# Clean-up for write-out
-indiv.df <- indiv.df[, "indiv"]
-indiv.df <- as.data.frame(indiv.df)
+# Use reduced indiv name as indname in genind
+indNames(obj) <- indiv.df$indiv
+
+##### Update individual names #####
+# Based on an earlier analysis of parentage, several individuals were determined to be 
+#  mislabeled, or were from a mixed family. Therefore we will correct these individuals here
+#  based on the variable above 'correct_ids=TRUE'
+if(correct_ids==TRUE){
+  
+  # Correct the known erroneous samples as follows
+  inds <- indNames(obj)
+  inds <- gsub(pattern = "F10-01", replacement = "F9-101", inds)
+  inds <- gsub(pattern = "F14-30", replacement = "F17-130", inds)
+  inds <- gsub(pattern = "F2-11", replacement = "F3-111", inds)
+  inds <- gsub(pattern = "F15-43", replacement = "F14-143", inds)
+  inds <- gsub(pattern = "F15-10", replacement = "F14-110", inds)
+  inds <- gsub(pattern = "F15-06", replacement = "F14-106", inds)
+  
+  # Update the indiv names in the genind
+  indNames(obj) <- inds
+  
+}else{
+  
+  print("Not changing IDs. Running analysis with known erroneous sample labels.")
+  
+}
+
+## Create a list of individuals for manual addition of population
+indiv.df <- as.data.frame(indNames(obj))
 colnames(indiv.df) <- "indiv"
+head(indiv.df)
+
+# Clean-up for write-out
+indiv.df <- as.data.frame(indiv.df)
 head(indiv.df)
 
 # Add dummy column to fill manually
@@ -327,6 +355,7 @@ obj.bck <- obj
 
 # Save output
 save.image("03_results/output_post-filters.Rdata")
+#load("03_results/output_post-filters.Rdata")
 # Note: can go from here to analyze the relatives and post-purged sibs analysis in the script
 # 01_scripts/sps_popgen_analysis_part_2_relatedness.R
 
@@ -355,20 +384,53 @@ write_delim(x = stock_code.df, file = "00_archive/stock_code.txt", delim = "\t",
 micro_stock_code.FN <- "00_archive/stock_code.txt"
 # this is for annotate_rubias(), for an unknown reason it requires the name micro_stock_code.FN
 
+
+
+
 ## Convert genepop to rubias
 datatype <- "SNP" # required for genepop_to_rubias_SNP
 #as.data.frame(cbind(indNames(obj), as.character(pop(obj))))
 #obj # the current analysis object
 
+## genepop to rubias with all loci, including multi-mappers
+# genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
+#                       , pop_map.FN = "02_input_data/my_data_ind-to-pop_annot.txt")
+# 
+# print("Your output is available as '03_results/rubias_output_SNP.txt")
+# 
+# file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_all_rubias.txt", overwrite = T)
+
+obj
+drop_loci(df = obj, drop_monomorphic = T)
+obj <- obj_filt
+
+counts_per_locus.FN <- "../identify_multimappers/counts_per_locus.txt"
+counts_per_locus.df <- read.table(file = counts_per_locus.FN, header = F)
+head(counts_per_locus.df)
+colnames(counts_per_locus.df) <- c("count", "mname")
+
+# How many have more than one? 
+loci_to_remove.vec <- counts_per_locus.df[counts_per_locus.df$count > 1, "mname"]
+length(loci_to_remove.vec)
+write.table(x = loci_to_remove.vec, file = "03_results/loci_to_remove.txt", quote = F, sep = "\t" , row.names = F, col.names = F)
+
+drop_loci(df = obj, drop_monomorphic = T, drop_file = "03_results/loci_to_remove.txt")
+obj <- obj_filt
+obj
+
+indNames(obj)
+pop(obj)
+
+# Write out to rubias
 genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
                       , pop_map.FN = "02_input_data/my_data_ind-to-pop_annot.txt")
 
 print("Your output is available as '03_results/rubias_output_SNP.txt")
 
-file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_all_rubias.txt", overwrite = T)
+file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_no_monomorphs_no_multimapper.txt", overwrite = T)
 
-save.image(file = "03_results/completed_popgen_analysis.RData")
-
+#save.image(file = "03_results/completed_popgen_analysis.RData")
+#load("03_results/completed_popgen_analysis.RData")
 # Using this output, move to "amplitools/01_scripts/demo_analysis.R", and run the ckmr script
 
 
