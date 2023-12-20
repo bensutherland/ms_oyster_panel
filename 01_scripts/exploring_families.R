@@ -64,8 +64,7 @@ head(monomorphs)
 
 # Combine
 num_fams_polymorph.df <- rbind(num_fams_polymorph.df, monomorphs)
-
-# TODO: this can be used to join with the incompatibilities table below
+dim(num_fams_polymorph.df)
 
 
 #### 02. Determine expected offspring genos ####
@@ -307,6 +306,7 @@ for(o in 1:nrow(family_map.df)){
 #### 04. Prepare final output report ####
 files.FN <- list.files(path = "03_results/", pattern = "offspring_true_and_false_matches_")
 files.FN <- files.FN[grep(pattern = "offspring_true_and_false_matches_all.csv", x = files.FN, invert = T)] # ignore the final output
+files.FN
 
 # Read in all of the T/F match matrices and combine them into one big df
 temp <- NULL; all_data.df <- NULL
@@ -368,11 +368,82 @@ num_fams_polymorph_t.df
 # Combine
 all_data_and_num_fam_poly.df <- rbind(all_data.df, num_fams_polymorph_t.df)
 dim(all_data_and_num_fam_poly.df)
-all_data_and_num_fam_poly.df[,1:5]
+#all_data_and_num_fam_poly.df[,1:5]
+
+all_data_and_num_fam_poly.df[1:5,1:7]
+all_data_and_num_fam_poly.df[(nrow(all_data_and_num_fam_poly.df)-5):nrow(all_data_and_num_fam_poly.df), 1:7]
+
+# Tallies
+exp.offsp.geno <- NULL; unexp.offsp.geno <- NULL; percent.exp.offsp.geno <- NULL; mname <- NULL
+
+
+result.df <- matrix(data = NA, nrow = ncol(all_data_and_num_fam_poly.df), ncol = 4)
+colnames(result.df) <- c("mname", "exp.offsp.geno", "unexp.offsp.geno", "percent.exp.offsp.geno")
+result.df <- as.data.frame(result.df)
+
+for(i in 1:ncol(all_data_and_num_fam_poly.df)){
+  
+  mname                 <- colnames(all_data_and_num_fam_poly.df)[i]
+  result.df[i, "mname"] <- mname
+  
+  exp.offsp.geno        <- sum(all_data_and_num_fam_poly.df[,i]=="-", na.rm = T)
+  result.df[i, "exp.offsp.geno"] <- exp.offsp.geno
+  
+  unexp.offsp.geno      <- sum(all_data_and_num_fam_poly.df[,i]=="FALSE", na.rm = T)
+  result.df[i, "unexp.offsp.geno"] <- unexp.offsp.geno
+  
+  percent.exp.offsp.geno      <- exp.offsp.geno / (exp.offsp.geno + unexp.offsp.geno)
+  result.df[i, "percent.exp.offsp.geno"] <- percent.exp.offsp.geno
+  
+}
+
+# Drop the unneeded column
+result.df <- result.df[result.df$mname!="indiv", ]
+
+# Adjust decimal
+result.df$percent.exp.offsp.geno <- formatC(x = result.df$percent.exp.offsp.geno, digits = 3, format = "f")
+
+head(result.df)
 
 
 
+# Write out per locus info
+write.csv(x = result.df, file = paste0("03_results/per_locus_expected_offsp_genos.csv"), row.names = F)
+
+# Markers to drop? 
+markers_at_least_ten_unexp.vec <- result.df[result.df$unexp.offsp.geno >= 10, "mname"]
+markers_at_least_five_unexp.vec <- result.df[result.df$unexp.offsp.geno >= 5, "mname"]
+
+length(markers_at_least_ten_unexp.vec)
+length(markers_at_least_five_unexp.vec)
+
+# Write out drop loci
+write.table(x = markers_at_least_ten_unexp.vec, file = "03_results/markers_to_drop.txt"
+            , quote = F, sep = "\t", row.names = F, col.names = F)
+
+# Write out all data
 write.csv(x = all_data_and_num_fam_poly.df, file = paste0("03_results/offspring_true_and_false_matches_all.csv"), row.names = F)
+
+
+obj
+drop_loci(df = obj, drop_file = "03_results/markers_to_drop.txt")
+obj_filt
+
+
+# Write out to rubias
+genepop_to_rubias_SNP(data = obj_filt, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
+                      , pop_map.FN = "02_input_data/my_data_ind-to-pop_annot.txt")
+
+print("Your output is available as '03_results/rubias_output_SNP.txt")
+
+file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_drop_problematic.txt", overwrite = T)
+
+
+save.image(file = "03_results/completed_popgen_analysis_null_alleles.RData")
+#load("03_results/completed_popgen_analysis_null_alleles.RData")
+
+# Using this output, move to "amplitools/01_scripts/demo_analysis.R", and run the ckmr script
+
 
 
 
