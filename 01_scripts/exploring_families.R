@@ -1,5 +1,5 @@
 # Script to analyze families to inspect for null alleles
-# B. Sutherland, initialized 2023-12-19
+# B. Sutherland, initialized 2023-12-21
 
 # Clear space, then source simple_pop_stats start script
 
@@ -76,6 +76,7 @@ for(i in 1:nrow(family_map.df)){
 
   # Set variables
   fam <- family_map.df$family.id[i]
+  fam <- as.character(fam) # necessary in case it is being interpreted as an integer
   p1 <-  family_map.df$parent.1[i]
   p2 <-  family_map.df$parent.2[i]
   
@@ -202,7 +203,8 @@ for(i in 1:nrow(family_map.df)){
 }
 
 names(family_marker.list)
-table(unlist(family_marker.list[[1]])) # Note NAs are still present
+length(family_marker.list)
+#table(unlist(family_marker.list[[1]])) # Note NAs are still present
 
 # Confirm all loci are present 
 for(i in 1:length(family_marker.list)){
@@ -223,6 +225,7 @@ for(o in 1:nrow(family_map.df)){
   
   # Set family
   fam <- family_map.df[o,"family.id"]
+  fam <- as.character(fam)
   p1 <- family_map.df[o,"parent.1"]
   p2 <- family_map.df[o,"parent.2"]
   off.string <- family_map.df[o,"offspring.string"]
@@ -418,12 +421,17 @@ length(markers_at_least_ten_unexp.vec)
 length(markers_at_least_five_unexp.vec)
 
 # Write out drop loci
-write.table(x = markers_at_least_ten_unexp.vec, file = "03_results/markers_to_drop.txt"
+write.table(x = markers_at_least_five_unexp.vec, file = "03_results/markers_to_drop.txt"
             , quote = F, sep = "\t", row.names = F, col.names = F)
 
 # Write out all data
 write.csv(x = all_data_and_num_fam_poly.df, file = paste0("03_results/offspring_true_and_false_matches_all.csv"), row.names = F)
 
+
+#### HERE ####
+#
+# Testing whether dropping null alleles identified in VIU pops helps assignment for OCP
+# SWITCH TO OCP23_analysis_2023-08-28.R
 
 obj
 drop_loci(df = obj, drop_file = "03_results/markers_to_drop.txt")
@@ -432,18 +440,25 @@ obj_filt
 
 # Write out to rubias
 genepop_to_rubias_SNP(data = obj_filt, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
-                      , pop_map.FN = "02_input_data/my_data_ind-to-pop_annot.txt")
+                      , pop_map.FN = "00_archive/renamed_ind-to-pop.txt")
 
 print("Your output is available as '03_results/rubias_output_SNP.txt")
 
-file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_drop_problematic.txt", overwrite = T)
-
+file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_results/rubias_output_SNP_filtered_and_null_OCP_drop.txt", overwrite = T)
 
 save.image(file = "03_results/completed_popgen_analysis_null_alleles.RData")
 #load("03_results/completed_popgen_analysis_null_alleles.RData")
 
 # Using this output, move to "amplitools/01_scripts/demo_analysis.R", and run the ckmr script
 
+#### Parentage Analysis ####
+# Clear space, and launch amplitools initiator (i.e., 01_scripts/00_initiator.R)
+
+# Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
+# All filtered loci
+ckmr_from_rubias(input.FN = "03_results/rubias_output_SNP_filtered_and_null_OCP_drop.txt", parent_pop = "F0"
+                 , offspring_pop = "F1", cutoff = 5
+)
 
 
 
