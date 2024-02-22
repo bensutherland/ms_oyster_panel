@@ -53,25 +53,43 @@ empirical_family_map.df
 dim(empirical_family_map.df)
 length(unique(empirical_family_map.df$family.id))
 
-#### 01. Load previous data or other metadata ####
+#### 01.a. Load previous data or other metadata ####
 load("03_results/completed_popgen_analysis.RData")
+
+#### TODO: make a backup of the original obj ####
+
+
+#### 01.b. Retain only the empirically-defined trios in the dataset ####
+offspring_to_keep <- empirical_family_map.df$offspring
+parents_to_keep   <- unique(c(empirical_family_map.df$parent1,  empirical_family_map.df$parent2))
+inds_to_keep <- c(offspring_to_keep, parents_to_keep)
+length(offspring_to_keep) # 36
+length(parents_to_keep)   # 15
+length(inds_to_keep)      # 51
+
+obj <- obj[inds_to_keep]
 
 
 #### 02. Determine expected offspring genos ####
+
+# What are the unique parent combinations? 
+empirical_family_map.df
+unique_families.df <- empirical_family_map.df[!duplicated(x = empirical_family_map.df$family.id), ]
+unique_families.df <- unique_families.df[, c("family.id", "parent1", "parent2")]
+
+# Characterize the potential offspring genos per family
 # Set nulls
 p1 <- NULL; p2 <- NULL; fam <- NULL; family_marker.list <- list()
-for(i in 1:nrow(family_map.df)){
+for(i in 1:nrow(unique_families.df)){
   
-# i <- 2
-
   # Set variables
-  fam <- family_map.df$family.id[i]
+  fam <- unique_families.df$family.id[i]
   fam <- as.character(fam) # necessary in case it is being interpreted as an integer
-  p1 <-  family_map.df$parent.1[i]
-  p2 <-  family_map.df$parent.2[i]
+  p1 <-  unique_families.df$parent1[i]
+  p2 <-  unique_families.df$parent2[i]
   
   # Reporting
-  print(paste0("Analyzing family ", fam, ", comprised of parents: ", p1, " and ", p2))
+  print(paste0("Analyzing empirical family ", fam, ", comprised of parents: ", p1, " and ", p2))
   
   # Subset to only the parents for the family
   parents.obj <- obj[c(p1, p2)]
@@ -79,16 +97,14 @@ for(i in 1:nrow(family_map.df)){
   # Reporting
   print("Determining offspring expected genos")
   
-  # Parent genotypes, two-column data (i.e., each marker has .01 and .02, and a count of the number of alleles for each)
+  # View parent genotypes, two-column data (i.e., each marker has .01 and .02, and a count of the number of alleles for each)
   parents.obj$tab[,1:5]
   
   # Drop the second call
   single_genos.df <- parents.obj$tab[, grep(pattern = "\\.02", x = colnames(x = parents.obj$tab), invert = T)]
-  
-  # Edit matrix per parent, converting numeric to genotype calls, derived from the first column call
   single_genos.df[,1:10] # only .01 is now present
   
-  # Determine the parent genotype based on the single column call
+  # Edit geno matrix per parent, converting numeric to genotype calls, derived from the first column call
   for(n in 1:nrow(single_genos.df)){
     
     single_genos.df[n,] <- gsub(pattern = "1", replacement = "het", x = single_genos.df[n,])
@@ -97,7 +113,9 @@ for(i in 1:nrow(family_map.df)){
     
   }
   
-  # Note: there are missing values present, so should flag these out
+  single_genos.df[,1:10]
+  
+  # Note: as shown below, there are missing values present, so need to flag these out later in the analysis
   table(single_genos.df, useNA = "ifany")
   
   # Observe the new format
@@ -136,7 +154,7 @@ for(i in 1:nrow(family_map.df)){
     }
     
     # Simplify the parental genotypes by sorting and combining
-    opts <- sort(unique(opts)) # note: order should not matter
+    opts <- sort(unique(opts)) # note: order does not matter
     opts <- paste0(opts, collapse = "_")
     opts
     
@@ -206,35 +224,38 @@ for(i in 1:length(family_marker.list)){
 
 
 #### 03. Evaluate offspring against parents ####
-
 # Who are the offspring of the family? 
 indNames(obj) # individuals available
-family_map.df
+empirical_family_map.df
 
-for(o in 1:nrow(family_map.df)){
+families <- unique(empirical_family_map.df$family.id)
+
+fam <- NULL; p1 <- NULL; p2 <- NULL; keep <- NULL; offspring <- NULL
+single_genos_eval.df <- NULL
+for(o in 1:length(families)){
   
   # Set family
-  fam <- family_map.df[o,"family.id"]
-  fam <- as.character(fam)
-  p1 <- family_map.df[o,"parent.1"]
-  p2 <- family_map.df[o,"parent.2"]
-  off.string <- family_map.df[o,"offspring.string"]
+  fam <- families[o]
+  p1 <- gsub(pattern = "__.*", replacement = "", x = fam)
+  p2 <- gsub(pattern = ".*__", replacement = "", x = fam)
+  #off.string <- family_map.df[o,"offspring.string"]
   
   # Reporting
   print(paste0("Analyzing family ", fam, ", comprised of parents: ", p1, " and ", p2))
-  print(paste0("Offspring are denoted by '", off.string,"'"))
+  print(paste0("Empirically defined offspring are selected from the empirical family map"))
   
-  # Retain only the offspring denoted by the indicated string in the family map
-  keep <- indNames(obj)[grep(pattern = off.string, x = indNames(obj))]
+  # Retain only the offspring empirically determined to be offspring of this specific family
+  keep <- empirical_family_map.df[empirical_family_map.df$family.id==fam, "offspring"]
   offspring <- obj[keep]
   print(indNames(offspring))
   
   #head(family_marker.list[[fam]], n = 10)
   #offspring$tab[,1:10]
   
+  # Create empty df
   single_genos.df <- NULL
   
-  # Remove the second allele column, keep only the single allele column for the offspring
+  # For the offspring genotypes, remove the second allele column, keeping only the first allele column
   single_genos.df <- offspring$tab[, grep(pattern = "\\.02", x = colnames(x = offspring$tab), invert = T)]
   #colnames(single_genos.df)
   
@@ -252,31 +273,31 @@ for(o in 1:nrow(family_map.df)){
   # Write out offspring geno calls
   write.csv(x = single_genos.df, file = paste0("03_results/offspring_geno_calls_", fam, ".csv"))
   
-  
-  
-  ## Check observed offspring against expected offspring genos
+  ## Check the observed offspring genotypes against the expected offspring genotypes, derived from the parents
   # Prepare a T/F matrix to fill
   single_genos_eval.df <- single_genos.df
   
   mname <- NULL
   for(i in 1:ncol(single_genos.df)){
     
-    # Check each marker at a time 
+    # Check each marker
     mname <- colnames(single_genos.df)[i]
     
-    # What are the accepted options for this marker? 
+    # What are the accepted (expected) options for this marker?
     accepted.opts <- unlist(family_marker.list[[fam]][mname])
     
+    # Also allow NA to be an accepted outcome (i.e., it does not indicate an error)
     accepted.opts <- c(accepted.opts, NA) # allow NA in offspring to be accepted
     
-    # If the parental genotype was not evaluable, denote as such
+    # If the parental genotype was missing, and therefore not able to be evaluated, denote it as such
     if(sum(accepted.opts %in% "missing") > 0){
       
       single_genos_eval.df[,i] <- "parent.missing"
       
-    # If the parental genotype was evaluable and the offspring genos predicted, continue
+    # If the parental genotypes were present, and the offspring genotypes predicted, continue
     }else if(sum(accepted.opts %in% "missing") == 0){
       
+      # Are the observed genotypes expected genotypes? 
       single_genos_eval.df[,i] <- single_genos.df[,i] %in% accepted.opts
       
     }
@@ -301,7 +322,7 @@ files.FN <- list.files(path = "03_results/", pattern = "offspring_true_and_false
 files.FN <- files.FN[grep(pattern = "offspring_true_and_false_matches_all.csv", x = files.FN, invert = T)] # ignore the final output
 files.FN
 
-# Read in all of the T/F match matrices and combine them into one big df
+# Read in all of the T/F match matrices and combine them into one big dataframe
 temp <- NULL; all_data.df <- NULL
 for(i in 1:length(files.FN)){
   
@@ -313,7 +334,7 @@ for(i in 1:length(files.FN)){
 dim(all_data.df)
 all_data.df[1:5,1:10]
 
-# Clean up a bit
+# Clean up names a bit
 colnames(all_data.df)[which(colnames(all_data.df)=="X")] <- "indiv"
 colnames(all_data.df) <- gsub(pattern = "^X", replacement = "", x = colnames(all_data.df))
 all_data.df[1:5,1:40]
@@ -326,63 +347,74 @@ all_data.df <- all_data.df %>%
                    mutate_all(as.character)
 all_data.df[1:5,1:10]
 
+# Replace TRUE with dashes to make visually easier to view
 library("tidyverse")
 all_data.df <- all_data.df %>%
            mutate_all(funs(str_replace(., "TRUE", "-")))
 all_data.df[1:5,1:10]
 
-
-## Add a bottom row indicating the number of polymorphic
+# Remove the first allele indicator
 colnames(all_data.df) <- gsub(pattern = "\\.01", replacement = "", x = colnames(all_data.df))
 all_data.df[1:5,1:10]
 
 
-head(num_fams_polymorph.df)
+### NOTE: this section has been removed 
 
-num_fams_polymorph_t.df <- t(num_fams_polymorph.df)
-num_fams_polymorph_t.df[,1:5]
-colnames(num_fams_polymorph_t.df) <- num_fams_polymorph_t.df["mname",]
-num_fams_polymorph_t.df[,1:5]
+# ## Add a bottom row indicating the number of polymorphic
+# head(num_fams_polymorph.df)
+# num_fams_polymorph_t.df <- t(num_fams_polymorph.df)
+# num_fams_polymorph_t.df[,1:5]
+# colnames(num_fams_polymorph_t.df) <- num_fams_polymorph_t.df["mname",]
+# num_fams_polymorph_t.df[,1:5]
+# 
+# dim(num_fams_polymorph_t.df)
+# num_fams_polymorph_t.df[,1:5]
+# dim(all_data.df)
+# all_data.df[1:5,1:5]
+# 
+# # Add indiv col
+# dummy.col <- as.data.frame(c("NA", "NA"))
+# colnames(dummy.col) <- "indiv"
+# rownames(dummy.col) <- c("mname", "freq")
+# dummy.col
+# 
+# num_fams_polymorph_t.df <- cbind(num_fams_polymorph_t.df, dummy.col)
+# num_fams_polymorph_t.df
+# 
+# # Combine
+# all_data_and_num_fam_poly.df <- rbind(all_data.df, num_fams_polymorph_t.df)
+# dim(all_data_and_num_fam_poly.df)
+# #all_data_and_num_fam_poly.df[,1:5]
+# 
+# all_data_and_num_fam_poly.df[1:5,1:7]
+# all_data_and_num_fam_poly.df[(nrow(all_data_and_num_fam_poly.df)-5):nrow(all_data_and_num_fam_poly.df), 1:7]
 
-dim(num_fams_polymorph_t.df)
-num_fams_polymorph_t.df[,1:5]
-dim(all_data.df)
-all_data.df[1:5,1:5]
-
-# Add indiv col
-dummy.col <- as.data.frame(c("NA", "NA"))
-colnames(dummy.col) <- "indiv"
-rownames(dummy.col) <- c("mname", "freq")
-dummy.col
-
-num_fams_polymorph_t.df <- cbind(num_fams_polymorph_t.df, dummy.col)
-num_fams_polymorph_t.df
-
-# Combine
-all_data_and_num_fam_poly.df <- rbind(all_data.df, num_fams_polymorph_t.df)
-dim(all_data_and_num_fam_poly.df)
-#all_data_and_num_fam_poly.df[,1:5]
-
-all_data_and_num_fam_poly.df[1:5,1:7]
-all_data_and_num_fam_poly.df[(nrow(all_data_and_num_fam_poly.df)-5):nrow(all_data_and_num_fam_poly.df), 1:7]
-
-# Tallies
-exp.offsp.geno <- NULL; unexp.offsp.geno <- NULL; percent.exp.offsp.geno <- NULL; mname <- NULL
+### /END/ NOTE: this section has been removed 
 
 
-result.df <- matrix(data = NA, nrow = ncol(all_data_and_num_fam_poly.df), ncol = 4)
+all_data.df[1:5,1:10]
+
+## Summarize the results in a dataframe
+# Create matrix with the number of rows being the number of columns (i.e., number of loci evaluated), and four cols
+# Note: the first column is allowed as a dummy
+result.df <- matrix(data = NA, nrow = ncol(all_data.df), ncol = 4)
+dim(result.df) 
+
+# Set column names
 colnames(result.df) <- c("mname", "exp.offsp.geno", "unexp.offsp.geno", "percent.exp.offsp.geno")
-result.df <- as.data.frame(result.df)
+result.df <- as.data.frame(result.df) # make df
 
-for(i in 1:ncol(all_data_and_num_fam_poly.df)){
+# Fill dataframe
+exp.offsp.geno <- NULL; unexp.offsp.geno <- NULL; percent.exp.offsp.geno <- NULL; mname <- NULL
+for(i in 1:ncol(all_data.df)){
   
-  mname                 <- colnames(all_data_and_num_fam_poly.df)[i]
+  mname                 <- colnames(all_data.df)[i]
   result.df[i, "mname"] <- mname
   
-  exp.offsp.geno        <- sum(all_data_and_num_fam_poly.df[,i]=="-", na.rm = T)
+  exp.offsp.geno        <- sum(all_data.df[,i]=="-", na.rm = T)
   result.df[i, "exp.offsp.geno"] <- exp.offsp.geno
   
-  unexp.offsp.geno      <- sum(all_data_and_num_fam_poly.df[,i]=="FALSE", na.rm = T)
+  unexp.offsp.geno      <- sum(all_data.df[,i]=="FALSE", na.rm = T)
   result.df[i, "unexp.offsp.geno"] <- unexp.offsp.geno
   
   percent.exp.offsp.geno      <- exp.offsp.geno / (exp.offsp.geno + unexp.offsp.geno)
@@ -398,59 +430,63 @@ result.df$percent.exp.offsp.geno <- formatC(x = result.df$percent.exp.offsp.geno
 
 head(result.df)
 
+# What is the distribution of the erroneous calls?
+hist(result.df$unexp.offsp.geno)
 
+# How many loci have at least two erroneous calls? 
+table(result.df$unexp.offsp.geno >= 2) # 97
 
 # Write out per locus info
+write.csv(x = all_data.df, file = paste0("03_results/per_locus_all_results.csv"), row.names = F)
 write.csv(x = result.df, file = paste0("03_results/per_locus_expected_offsp_genos.csv"), row.names = F)
 
-# Markers to drop? 
-markers_at_least_ten_unexp.vec <- result.df[result.df$unexp.offsp.geno >= 10, "mname"]
-markers_at_least_five_unexp.vec <- result.df[result.df$unexp.offsp.geno >= 5, "mname"]
 
-length(markers_at_least_ten_unexp.vec)
-length(markers_at_least_five_unexp.vec)
+# What loci are erroneous in at least two offspring? 
+loci_to_drop <- result.df[result.df$unexp.offsp.geno >= 2, "mname"]
+# write it out
+write.table(x = loci_to_drop, file = "03_results/markers_to_drop.txt"
+            , quote = F, sep = "\t", row.names = F, col.names = F
+            )
 
-# Write out drop loci
-write.table(x = markers_at_least_five_unexp.vec, file = "03_results/markers_to_drop.txt"
-            , quote = F, sep = "\t", row.names = F, col.names = F)
-
-# Write out all data
-write.csv(x = all_data_and_num_fam_poly.df, file = paste0("03_results/offspring_true_and_false_matches_all.csv"), row.names = F)
-
-
-#### HERE ####
-#
-# Testing whether dropping null alleles identified in VIU pops helps assignment for OCP
-# SWITCH TO OCP23_analysis_2023-08-28.R
-
+# RELOAD or OBTAIN FROM BACKUP (#TODO)
 obj
 drop_loci(df = obj, drop_file = "03_results/markers_to_drop.txt")
 obj_filt
 
 
+### ASIDE
+#
+# Testing whether dropping null alleles identified in VIU pops helps assignment for OCP
+# SWITCH TO OCP23_analysis_2023-08-28.R
+### /END/ ASIDE 
+
+
 # Write out to rubias
 genepop_to_rubias_SNP(data = obj_filt, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
-                      , pop_map.FN = "00_archive/renamed_ind-to-pop.txt")
+                      , pop_map.FN = "02_input_data/my_data_ind-to-pop_annot.txt")
 
 print("Your output is available as '03_results/rubias_output_SNP.txt")
-
-file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_results/rubias_output_SNP_filtered_and_null_OCP_drop.txt", overwrite = T)
-
 save.image(file = "03_results/completed_popgen_analysis_null_alleles.RData")
-#load("03_results/completed_popgen_analysis_null_alleles.RData")
 
-# Using this output, move to "amplitools/01_scripts/demo_analysis.R", and run the ckmr script
+
+### BEFORE MOVING ANY FURTHER, SAVE AMPLITOOLS RESULTS FOLDER ! ####
+
+## Copy the rubias output to amplitools, and re-run ckmr analysis ##
+
 
 #### Parentage Analysis ####
 # Clear space, and launch amplitools initiator (i.e., 01_scripts/00_initiator.R)
 
 # Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
-# All filtered loci
-ckmr_from_rubias(input.FN = "03_results/rubias_output_SNP_filtered_and_null_OCP_drop.txt", parent_pop = "F0"
-                 , offspring_pop = "F1", cutoff = 5
+# VIU_F1 vs VIU_F2, no monomorph, no multimapper, cleaned
+ckmr_from_rubias(input.FN = "03_prepped_data/cgig_no_monomorphs_no_multimapper_cleaned.txt"
+                 , parent_pop = "VIU_F1"
+                 , offspring_pop = "VIU_F2"
+                 , cutoff = 5
 )
 
-
+graph_relatives(input.FN = "03_results/po_VIU_F1_vs_VIU_F2_pw_logl_5.txt", drop_string = ""
+                , plot_width = 8, plot_height = 8, logl_cutoff = 10)
 
 # all_data_and_num_fam_poly_t.df <- t(all_data_and_num_fam_poly.df)
 # dim(all_data_and_num_fam_poly_t.df)
