@@ -3,68 +3,58 @@
 
 # Clear space, then source simple_pop_stats start script
 
-#load("03_results/completed_popgen_analysis.RData")
 
-# Load family map
-family_map.df <- read.table(file = "02_input_data/family_map.csv", header = T, sep = ",")
-family_map.df
+#### 00. Identify strong empirical trios as 'true' relationships ####
+### ID empirically-identified trios
+# Load data
+po_report.df <- read.table(file = "03_results/po_VIU_F1_vs_VIU_F2_pw_logl_5_report.txt", header = T, sep = "\t")
+head(po_report.df)
+po_report.df$p1_logl <- as.numeric(po_report.df$p1_logl)
+po_report.df$p2_logl <- as.numeric(po_report.df$p2_logl)
 
-# Drop families that do not have both parents
-family_map.df <- family_map.df[family_map.df$parent.1 %in% indNames(obj),]
-family_map.df <- family_map.df[family_map.df$parent.2 %in% indNames(obj),]
+## Limit to only those strong IDs
+# Remove missing data
+po_report.df <- po_report.df[!is.na(po_report.df$p1_logl) & !is.na(po_report.df$p2_logl), ] 
+po_report.df <- po_report.df[po_report.df$p1_logl > 10 & po_report.df$p2_logl > 10 & po_report.df$other_assigns=="", ]
+dim(po_report.df)
+head(po_report.df)
 
-family_map.df
-
-#### 01. Polymorphic loci per parental pair ####
-# How many loci are polymorphic per parental pair, and 
-
-# Analyze for each parental pair in the map
-# Set nulls
-p1 <- NULL; p2 <- NULL; fam <- NULL; per_family_loci.list <- list()
-for(i in 1:nrow(family_map.df)){
-
-  # set variables
-  fam <- family_map.df$family.id[i]
-  p1 <-  family_map.df$parent.1[i]
-  p2 <-  family_map.df$parent.2[i]
-
-  print(paste0("***Analyzing family ", fam, ", comprised of parents: ", p1, " and ", p2, "***"))
-
-  parents.obj <- obj[c(p1, p2)]
-
-
-  # Check number polymorphic
-  drop_loci(df = parents.obj, drop_monomorphic = T)
-
-  parents.obj <- obj_filt
-  #print(parents.obj)
-
-  #parents.obj
+# Define empirical family map
+parents <- NULL; parent.vec <- NULL
+for(i in 1:nrow(po_report.df)){
   
-  # Save the names of polymorphic loci in the parents
-  per_family_loci.list[[fam]] <- locNames(parents.obj)
+  parents <- sort(c(po_report.df$p1[i], po_report.df$p2[i]))
+  
+  parents <- paste0(parents, collapse = "__")
+  
+  # Build the parent vector
+  parent.vec <- c(parent.vec, parents)
   
 }
-# Reporting
-print("Names of polymorphic loci per family in per_family_loci.list")
 
-num_fams_polymorph.df <- sort(table(unlist(per_family_loci.list)), decreasing = T)
-num_fams_polymorph.df <- as.data.frame(num_fams_polymorph.df)
-colnames(num_fams_polymorph.df) <- c("mname", "freq")
-head(num_fams_polymorph.df)
-dim(num_fams_polymorph.df)
+empirical_family_map.df <- as.data.frame(parent.vec)
+colnames(empirical_family_map.df)[1] <- "family.id"
+head(empirical_family_map.df)
 
-# Which markers are missing?
-monomorphs <- setdiff(x = locNames(obj), y = num_fams_polymorph.df$mname)
-monomorphs <- as.data.frame(monomorphs)
-colnames(monomorphs) <- "mname"
-head(monomorphs)
-monomorphs$freq <- "0"
-head(monomorphs)
+# Add other cols
+empirical_family_map.df$offspring <- po_report.df$indiv
+empirical_family_map.df <- separate(data = empirical_family_map.df, col = "family.id", into = c("parent1", "parent2"), sep = "__", remove = F)
 
-# Combine
-num_fams_polymorph.df <- rbind(num_fams_polymorph.df, monomorphs)
-dim(num_fams_polymorph.df)
+empirical_family_map.df <- empirical_family_map.df[,c("offspring", "family.id", "parent1", "parent2")]
+head(empirical_family_map.df)
+family_freq.df <- as.data.frame(table(empirical_family_map.df$family.id))
+family_freq.df <- family_freq.df[family_freq.df$Freq > 1, ]
+family_freq.df
+select_empirical_families <- family_freq.df$Var1
+
+# Keep only those families with more than one occurrences, this will comprise the empirical trios
+empirical_family_map.df <- empirical_family_map.df[empirical_family_map.df$family.id %in% select_empirical_families, ]
+empirical_family_map.df
+dim(empirical_family_map.df)
+length(unique(empirical_family_map.df$family.id))
+
+#### 01. Load previous data or other metadata ####
+load("03_results/completed_popgen_analysis.RData")
 
 
 #### 02. Determine expected offspring genos ####
