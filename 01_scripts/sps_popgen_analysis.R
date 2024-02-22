@@ -21,6 +21,8 @@ rm(obj_nr_best)
 
 # Otherwise, load the genepop and your data is obj
 #load_genepop(datatype = "SNP") 
+
+# the data is here
 obj
 
 
@@ -73,6 +75,7 @@ head(indiv.df)
 # Clean-up for write-out
 indiv.df <- as.data.frame(indiv.df)
 head(indiv.df)
+dim(indiv.df)
 
 # Add dummy column to fill manually
 indiv.df$pop <- NA
@@ -91,6 +94,8 @@ indiv_annot.df <- read.table(file = "02_input_data/my_data_ind-to-pop_annot.txt"
                            , header = T, sep = "\t"
                            #, quote = F
                            )
+dim(indiv_annot.df)
+head(indiv_annot.df)
 
 ## Update population names
 # Merge with the population annotation, do not sort
@@ -99,10 +104,11 @@ indiv_annot_in_order.df <- merge(x = indiv.df, indiv_annot.df, by = "indiv"
                                  )
 
 head(indiv_annot_in_order.df)
+dim(indiv_annot.df)
 
 # Observe order remained same as (x) above
-head(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
-tail(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
+head(cbind(indiv_annot_in_order.df, indiv.df), n = 20)
+tail(cbind(indiv_annot_in_order.df, indiv.df), n = 20)
 
 ### TODO: add data-check in this step###
 # # Write a little test to be sure
@@ -256,12 +262,14 @@ obj.all.filt <- obj.filt[, loc=keep]
 obj <- obj.all.filt
 rm(obj.all.filt)
 
+
 ##### 03.3 Drop monomorphic loci #####
 drop_loci(drop_monomorphic = TRUE)
 obj <- obj_filt
 rm(obj_filt)
 rm(obj.filt)
 gc()
+
 
 ##### 03.4 Post-QC info collection #####
 obj
@@ -278,6 +286,7 @@ write.table(x = inds, file = "03_results/retained_individuals.txt", sep = "\t", 
 write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote = F
             , row.names = F, col.names = F
 )
+
 
 
 ##### 03.5 per marker stats and filters #####
@@ -315,8 +324,8 @@ table(per_loc_stats.df$Hobs > 0.5)
 # obj
 ## /end/ Optional for dropping ##
 
-## Hardy-Weinberg, only on wild samples though ##
 
+## Hardy-Weinberg, only on wild samples though ##
 # Remove cultured CHN samples, previously unknown but now noted as QDC samples
 QDC.inds <- c("1601", "1602", "1603", "1604", "1605", "1606", "1607", "1608")
 keep.inds <- setdiff(x = indNames(obj), y = QDC.inds)
@@ -369,9 +378,9 @@ obj_parentage <- repool(separated_pops$VIU_F0, separated_pops$VIU_F1, separated_
 table(pop(obj_parentage))
 obj <- obj_parentage
 
-# Need to create a tab-delim stock code file in format of e.g., 
-## row 1: collection	repunit
-## row 2: boundary_bay	lower_mainland
+## Aside, instruction: need to create a tab-delim stock code file in following format
+# row 1: # collection	repunit
+# row 2: # boundary_bay	lower_mainland
 
 # Here we will just create a df based on existing populations where collection = repunit
 stock_code.df <- as.data.frame(unique(pop(obj)))
@@ -383,9 +392,6 @@ stock_code.df
 write_delim(x = stock_code.df, file = "00_archive/stock_code.txt", delim = "\t", col_names = T)
 micro_stock_code.FN <- "00_archive/stock_code.txt"
 # this is for annotate_rubias(), for an unknown reason it requires the name micro_stock_code.FN
-
-
-
 
 ## Convert genepop to rubias
 datatype <- "SNP" # required for genepop_to_rubias_SNP
@@ -400,6 +406,7 @@ datatype <- "SNP" # required for genepop_to_rubias_SNP
 # 
 # file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_all_rubias.txt", overwrite = T)
 
+# Remove monomorphic sites
 obj
 drop_loci(df = obj, drop_monomorphic = T)
 obj <- obj_filt
@@ -427,11 +434,7 @@ genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRU
 
 print("Your output is available as '03_results/rubias_output_SNP.txt")
 
-file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_prepped_data/cgig_no_monomorphs_no_multimapper.txt", overwrite = T)
-
 #save.image(file = "03_results/completed_popgen_analysis.RData")
 #load("03_results/completed_popgen_analysis.RData")
 # Using this output, move to "amplitools/01_scripts/demo_analysis.R", and run the ckmr script
-
-
 
