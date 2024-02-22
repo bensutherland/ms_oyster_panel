@@ -144,10 +144,12 @@ Currently implemented in an interactive Rscript `100-bowtie2-amplicon-mapping-ro
 Create a folder that contains both `amplitools` and `simple_pop_stats`, as both of these repositories will be used to analyze the data.       
 
 
-#### Data inputs:     
-- VariantCaller output files (tab-delim but .xls suffix) from [FigShare](https://doi.org/10.6084/m9.figshare.23646471.v1)       
+#### Data inputs:      
+Download the following from [FigShare](https://doi.org/10.6084/m9.figshare.23646471.v1)
+- VariantCaller output files `R_2022_08_04_S5XL.xls` and `R_2022_10_07_S5XL.xls`       
+- prepared individual to population map `my_data_ind-to-pop_annot.txt`     
 
-Put `R_2022_08_04_S5XL.xls` and `R_2022_10_07_S5XL.xls` into `amplitools/02_input_data`       
+Put the above VariantCaller files in `amplitools/02_input_data` and the population map in `simple_pop_stats/02_input_data`       
 
 ### 01. Use amplitools to prepare input data
 Open `amplitools/01_scripts/00_initiator.R` in Rstudio and source the script. This will load amplitools.       
@@ -161,16 +163,14 @@ proton_to_genepop(neg_control="BLANK")
 ```
 This will output, per input file, a .txt file in `02_input_data/prepped_matrices/`.      
 
-Finalize the genepop by using the following script on each prepared matrix:       
-`amplitools/01_scripts/format_genepop.sh 02_input_data/prepped_matrices/<filename>`        
+From amplitools main directory in the terminal, finalize the genepop by using the following script on each prepared matrix:       
+`./01_scripts/format_genepop.sh 02_input_data/prepped_matrices/<filename>`        
 
 This will output, per input file, a .gen file in `02_input_data/prepped_genepops/`.      
 
+Copy the output genepops into `simple_pop_stats/02_input_data`.      
 
 ### 02. Compare technical replicate samples and retain the best replicates 
-From amplitools, copy prepared `*.gen` files into `simple_pop_stats`:       
-`cp 02_input_data/prepped_genepops/*.gen ../simple_pop_stats/02_input_data/`        
-
 Open `simple_pop_stats/01_scripts/simple_pop_stats_start.R` in RStudio, clear space, then source the script.     
 Also source the development script `simple_pop_stats/01_scripts/dev/comp_tech_reps.R`       
 
@@ -203,8 +203,12 @@ Follow the instructions of the script to:
 7. Convert the genepop to a rubias file for downstream use in parentage (see below)
 
 **Outputs**
-- various simple_pop_stats output in 03_results
-- a rubias file will be output to `amplitools/03_prepped_data/cgig_all_rubias.txt`    
+- various `simple_pop_stats` output in `03_results`     
+- a rubias file will be output to `03_results/rubias_output_SNP.txt`    
+
+Copy the output rubias prepared file to amplitools, into the `03_prepped_data` folder, suggested filename:     
+`cgig_no_monomorphs_no_multimapper.txt`       
+
 
 ### 04. Parentage analysis
 Requires that the rubias file was produced in the preceding step. This will contain three generations of samples, `VIU_F0`, `VIU_F1`, `VIU_F2` for parentage analysis.      
@@ -226,6 +230,14 @@ ckmr_from_rubias(input.FN = "03_prepped_data/cgig_all_rubias.txt", parent_pop = 
 - Parent-offspring relationships above the cutoff
 - Parent and offspring full-sib results above the cutoff
 - Retained individuals for both parent and offspring populations
+
+Copy the amplitools output file `po_VIU_F1_vs_VIU_F2_pw_logl_5_report.txt` into `simple_pop_stats/03_results/`, as this will be used to determine the empirically-determined likely trios based on the following criteria:    
+1. log likelihood > 10 in both parents
+2. No additional assignments
+This will be used to evaluate any potential poorly performing loci, or likely null alleles, but this will be done in `simple_pop_stats`.      
+
+
+
 
 
 
