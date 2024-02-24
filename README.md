@@ -237,6 +237,16 @@ Copy the amplitools output file `po_VIU_F1_vs_VIU_F2_pw_logl_5_report.txt` into 
 This will be used to evaluate any potential poorly performing loci, or likely null alleles, but this will be done in `simple_pop_stats`.      
 
 
+### 05. Panel testing: independent dataset
+An independent dataset was generated to evaluate the function of the panel. To analyze, follow the above steps to create a folder with the present repository, amplitools, and simple_pop_stats, all at the same level.     
+The analysis will require that the following files are retained and stored as described:     
+- `R_2023_07_26_12_44_23_user_GSS5PR-0268-78-Ampseq_Oyster_20230725.xls` in `amplitools/02_input_data`         
+- `my_data_ind-to-pop_annot.txt` in `simple_pop_stats/02_input_data/`     
+
+Follow instructions and analysis code in the following script:     
+`ms_oyster_panel_OCP23_v.0.3/01_scripts/OCP23_analysis_2023-08-28.R`       
+
+
 
 
 
