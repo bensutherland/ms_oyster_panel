@@ -9,9 +9,9 @@
 load(file = "03_results/filtered_genind_before_ckmr.RData")
 
 ### TODO: HERE SHOULD DO A PCA ###
-pca()
+#pca()
 
-#### 04. Parentage analysis ####
+#### 04. Prepare rubias input file ####
 ## Convert genepop to Rubias format
 
 # Need to create a tab-delim stock code file in format of e.g., 
@@ -94,82 +94,6 @@ file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools_OCP23_v
 # Save out image
 save.image("03_results/completed_popgen_analysis.RData")
 
-### Next, go to OCP23_analysis_part_3_2024-02-23.R 
 
 
-# ##### Update sample IDs in the rubias file ####
-# # Update sample IDs in the rubias file
-# rubias.df <- read.delim2(file = "03_results/rubias_output_SNP.txt", sep = "\t")
-# dim(rubias.df)
-# rubias.df[1:5, 1:10]
-# rubias.df$repunit <- rubias.df$collection # hacky fix to whatever caused the error for the repunit being listed as the alt.id
-# rubias.df[1:5, 1:10]
-# 
-# ## Load annotated df that was manually made earlier
-# indiv_annot.df <- read.table(file = "00_archive/my_data_ind-to-pop_annot.txt"
-#                              , header = T, sep = "\t"
-# )
-# head(indiv_annot.df)
-# indiv_annot.df <- indiv_annot.df[,c("indiv", "alt.ID")]
-# 
-# rubias.df[1:5, 1:10]
-# 
-# rubias.df <- merge(x = rubias.df, y = indiv_annot.df, by = "indiv", all.x = TRUE, sort = F)
-# dim(rubias.df)
-# rubias.df[1:5, 699:709]
-# 
-# rubias.df <- rubias.df[, !colnames(rubias.df) %in% "indiv"]
-# rubias.df[1:5, 1:10]
-# 
-# rubias.df <-  rubias.df %>% 
-#                   select(alt.ID, everything())
-# rubias.df[1:5, 1:10]
-# colnames(rubias.df)[which(colnames(rubias.df)=="alt.ID")] <- "indiv"
-# rubias.df[1:5, 1:10]
-# 
-# write.table(x = rubias.df, file = "03_results/rubias_output_SNP_renamed.txt", sep = "\t", row.names = FALSE)
-
-# file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_results/cgig_all_rubias.txt", overwrite = T)
-# save.image(file = "03_results/completed_analysis_to_rubias.RData")
-
-
-
-#### Parentage Analysis ####
-# Clear space, and launch amplitools initiator (i.e., 01_scripts/00_initiator.R)
-
-# Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
-# All filtered loci
-ckmr_from_rubias(input.FN = "03_results/rubias_output_SNP_all_filtered_loci.txt", parent_pop = "F0"
-                 , offspring_pop = "F1", cutoff = 5
-)
-
-# Filtered loci and pilot study null allele removed
-ckmr_from_rubias(input.FN = "03_results/rubias_output_SNP_filtered_and_null_pilot_drop.txt", parent_pop = "F0"
-                 , offspring_pop = "F1", cutoff = 5
-)
-
-
-
-### New items to do: 
-# check number of loci per indiv from rubias file here (amplitools), retain to connect to report
-# use sex attribute within the prep report
-
-# Generate report from the output of CKMR-sim
-prep_report(relationship = "PO")
-
-
-
-# Plot the output results
-graph_relatives(input.FN = "03_results/po_F0_vs_F1_pw_logl_5.txt", logl_cutoff = 5
-                , drop_string = "", directed = F, plot_width = 12, plot_height = 12
-)
-
-graph_relatives(input.FN = "03_results/fs_offsp_F1_pw_logl_5.txt", logl_cutoff = 5
-                , drop_string = "", directed = F, plot_width = 12, plot_height = 12
-)
-
-graph_relatives(input.FN = "03_results/fs_parent_F0_pw_logl_5.txt", logl_cutoff = 5
-                , drop_string = "", directed = F, plot_width = 12, plot_height = 12
-)
-
-
+# Go to OCP23_analysis_part_3_2024-02-23.R
