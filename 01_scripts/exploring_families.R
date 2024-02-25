@@ -1,13 +1,22 @@
 # Script to analyze families to inspect for null alleles
 # B. Sutherland, initialized 2023-12-21
 
-# Clear space, then source simple_pop_stats start script
+# Requires that input scripts have been run 
+# Clear space and load sps
+load(file = "03_results/completed_popgen_analysis.RData")
+
+# Set variable depending on the dataset
+report.FN <- "../amplitools_OCP23_v.0.3/03_results/parentage_with_all_filtered_loci/po_F0_vs_F1_pw_logl_5_report.txt"
+#report.FN <-  
+
+# Note: make sure you have already set the following variables
+report.FN
 
 
 #### 00. Identify strong empirical trios as 'true' relationships ####
 ### ID empirically-identified trios
 # Load data
-po_report.df <- read.table(file = "03_results/po_VIU_F1_vs_VIU_F2_pw_logl_5_report.txt", header = T, sep = "\t")
+po_report.df <- read.table(file = report.FN, header = T, sep = "\t")
 head(po_report.df)
 po_report.df$p1_logl <- as.numeric(po_report.df$p1_logl)
 po_report.df$p2_logl <- as.numeric(po_report.df$p2_logl)
@@ -15,11 +24,15 @@ po_report.df$p2_logl <- as.numeric(po_report.df$p2_logl)
 ## Limit to only those strong IDs
 # Remove missing data
 po_report.df <- po_report.df[!is.na(po_report.df$p1_logl) & !is.na(po_report.df$p2_logl), ] 
-po_report.df <- po_report.df[po_report.df$p1_logl > 10 & po_report.df$p2_logl > 10 & po_report.df$other_assigns=="", ]
+
+# logl >= 10 in both parents
+po_report.df <- po_report.df[po_report.df$p1_logl >= 10 & po_report.df$p2_logl >= 10 & po_report.df$other_assigns=="", ]
 dim(po_report.df)
 head(po_report.df)
 
-# Define empirical family map
+## Define empirical family map
+# Who are the unique parents from these high quality assignments, 
+#   sort them and create an empirical sorted family ID
 parents <- NULL; parent.vec <- NULL
 for(i in 1:nrow(po_report.df)){
   
@@ -42,7 +55,10 @@ empirical_family_map.df <- separate(data = empirical_family_map.df, col = "famil
 
 empirical_family_map.df <- empirical_family_map.df[,c("offspring", "family.id", "parent1", "parent2")]
 head(empirical_family_map.df)
+
+# How many times were each set of parents observed together? 
 family_freq.df <- as.data.frame(table(empirical_family_map.df$family.id))
+# Only keep those with more than 1 observation
 family_freq.df <- family_freq.df[family_freq.df$Freq > 1, ]
 family_freq.df
 select_empirical_families <- family_freq.df$Var1
@@ -52,20 +68,23 @@ empirical_family_map.df <- empirical_family_map.df[empirical_family_map.df$famil
 empirical_family_map.df
 dim(empirical_family_map.df)
 length(unique(empirical_family_map.df$family.id))
+unique(empirical_family_map.df$family.id)
+
 
 #### 01.a. Load previous data or other metadata ####
 load("03_results/completed_popgen_analysis.RData")
 
-#### TODO: make a backup of the original obj ####
+# Make backup of original obj
+obj.bck <- obj
 
 
 #### 01.b. Retain only the empirically-defined trios in the dataset ####
 offspring_to_keep <- empirical_family_map.df$offspring
 parents_to_keep   <- unique(c(empirical_family_map.df$parent1,  empirical_family_map.df$parent2))
 inds_to_keep <- c(offspring_to_keep, parents_to_keep)
-length(offspring_to_keep) # 36
-length(parents_to_keep)   # 15
-length(inds_to_keep)      # 51
+length(offspring_to_keep) # 36 (pilot), 41 (OCP)
+length(parents_to_keep)   # 15 (pilot), 15 (OCP)
+length(inds_to_keep)      # 51 (pilot), 56 (OCP)
 
 obj <- obj[inds_to_keep]
 
@@ -434,7 +453,7 @@ head(result.df)
 hist(result.df$unexp.offsp.geno)
 
 # How many loci have at least two erroneous calls? 
-table(result.df$unexp.offsp.geno >= 2) # 97
+table(result.df$unexp.offsp.geno >= 2) # 97 (pilot), 80 (OCP)
 
 # Write out per locus info
 write.csv(x = all_data.df, file = paste0("03_results/per_locus_all_results.csv"), row.names = F)
@@ -449,21 +468,15 @@ write.table(x = loci_to_drop, file = "03_results/markers_to_drop.txt"
             )
 
 # RELOAD or OBTAIN FROM BACKUP (#TODO)
+obj <- obj.bck
 obj
 drop_loci(df = obj, drop_file = "03_results/markers_to_drop.txt")
 obj_filt
 
-
-### ASIDE
-#
-# Testing whether dropping null alleles identified in VIU pops helps assignment for OCP
-# SWITCH TO OCP23_analysis_2023-08-28.R
-### /END/ ASIDE 
-
-
 # Write out to rubias
+pop_map.FN <- "00_archive/renamed_ind-to-pop.txt" # renamed samples
 genepop_to_rubias_SNP(data = obj_filt, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
-                      , pop_map.FN = "02_input_data/my_data_ind-to-pop_annot.txt")
+                      , pop_map.FN = pop_map.FN)
 
 print("Your output is available as '03_results/rubias_output_SNP.txt")
 save.image(file = "03_results/completed_popgen_analysis_null_alleles.RData")
@@ -480,8 +493,8 @@ save.image(file = "03_results/completed_popgen_analysis_null_alleles.RData")
 # Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
 # VIU_F1 vs VIU_F2, no monomorph, no multimapper, cleaned
 ckmr_from_rubias(input.FN = "03_prepped_data/cgig_no_monomorphs_no_multimapper_cleaned.txt"
-                 , parent_pop = "VIU_F1"
-                 , offspring_pop = "VIU_F2"
+                 , parent_pop = "F0"
+                 , offspring_pop = "F1"
                  , cutoff = 5
 )
 
