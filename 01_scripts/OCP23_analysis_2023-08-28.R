@@ -288,6 +288,7 @@ length(loci_to_remove.vec)
 write.table(x = loci_to_remove.vec, file = "03_results/loci_to_remove.txt", quote = F, sep = "\t" , row.names = F, col.names = F)
 
 drop_loci(df = obj, drop_monomorphic = F, drop_file = "03_results/loci_to_remove.txt")
+obj <- obj_filt
 
 # Save output
 save.image(file = "03_results/filtered_genind_before_ckmr.RData")
