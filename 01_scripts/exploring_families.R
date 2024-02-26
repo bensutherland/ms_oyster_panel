@@ -3,11 +3,11 @@
 
 # Requires that input scripts have been run 
 # Clear space and load sps
-load(file = "03_results/completed_popgen_analysis.RData")
+load(file = "03_results/post-filters_prepared_for_parentage_rubias_built.RData")
 
 # Set variable depending on the dataset
-report.FN <- "../amplitools_OCP23_v.0.3/03_results/parentage_with_all_filtered_loci/po_F0_vs_F1_pw_logl_5_report.txt"
-#report.FN <-  
+report.FN <- "../amplitools_OCP23_v.0.3/03_results/ckmr_input_rubias_135_ind_343_loc_2024-02-26_F1_vs_F0_2024-02-26/po_F0_vs_F1_pw_logl_5_report.txt"
+#report.FN <-    # pilot study
 
 # Note: make sure you have already set the following variables
 report.FN
@@ -71,10 +71,7 @@ length(unique(empirical_family_map.df$family.id))
 unique(empirical_family_map.df$family.id)
 
 
-#### 01.a. Load previous data or other metadata ####
-load("03_results/completed_popgen_analysis.RData")
-
-# Make backup of original obj
+#### 01.a. Back up prepared obj ####
 obj.bck <- obj
 
 
@@ -240,6 +237,9 @@ for(i in 1:length(family_marker.list)){
   
 }
 
+# The output is a list, where each slot is the expected offspring genotypes per locus based on the parental genotypes, 
+#  and the number of slots is based on the number of families
+head(family_marker.list[[1]])
 
 
 #### 03. Evaluate offspring against parents ####
@@ -377,42 +377,6 @@ colnames(all_data.df) <- gsub(pattern = "\\.01", replacement = "", x = colnames(
 all_data.df[1:5,1:10]
 
 
-### NOTE: this section has been removed 
-
-# ## Add a bottom row indicating the number of polymorphic
-# head(num_fams_polymorph.df)
-# num_fams_polymorph_t.df <- t(num_fams_polymorph.df)
-# num_fams_polymorph_t.df[,1:5]
-# colnames(num_fams_polymorph_t.df) <- num_fams_polymorph_t.df["mname",]
-# num_fams_polymorph_t.df[,1:5]
-# 
-# dim(num_fams_polymorph_t.df)
-# num_fams_polymorph_t.df[,1:5]
-# dim(all_data.df)
-# all_data.df[1:5,1:5]
-# 
-# # Add indiv col
-# dummy.col <- as.data.frame(c("NA", "NA"))
-# colnames(dummy.col) <- "indiv"
-# rownames(dummy.col) <- c("mname", "freq")
-# dummy.col
-# 
-# num_fams_polymorph_t.df <- cbind(num_fams_polymorph_t.df, dummy.col)
-# num_fams_polymorph_t.df
-# 
-# # Combine
-# all_data_and_num_fam_poly.df <- rbind(all_data.df, num_fams_polymorph_t.df)
-# dim(all_data_and_num_fam_poly.df)
-# #all_data_and_num_fam_poly.df[,1:5]
-# 
-# all_data_and_num_fam_poly.df[1:5,1:7]
-# all_data_and_num_fam_poly.df[(nrow(all_data_and_num_fam_poly.df)-5):nrow(all_data_and_num_fam_poly.df), 1:7]
-
-### /END/ NOTE: this section has been removed 
-
-
-all_data.df[1:5,1:10]
-
 ## Summarize the results in a dataframe
 # Create matrix with the number of rows being the number of columns (i.e., number of loci evaluated), and four cols
 # Note: the first column is allowed as a dummy
@@ -462,54 +426,43 @@ write.csv(x = result.df, file = paste0("03_results/per_locus_expected_offsp_geno
 
 # What loci are erroneous in at least two offspring? 
 loci_to_drop <- result.df[result.df$unexp.offsp.geno >= 2, "mname"]
+
 # write it out
-write.table(x = loci_to_drop, file = "03_results/markers_to_drop.txt"
+write.table(x = loci_to_drop, file = "03_results/markers_with_unexpected_genos_in_offspring.txt"
             , quote = F, sep = "\t", row.names = F, col.names = F
             )
 
-# RELOAD or OBTAIN FROM BACKUP (#TODO)
+
+#### Remove the problematic loci from the original genind file #####
 obj <- obj.bck
 obj
-drop_loci(df = obj, drop_file = "03_results/markers_to_drop.txt")
+
+drop_loci(df = obj, drop_file = "03_results/markers_with_unexpected_genos_in_offspring.txt")
 obj_filt
 
+#### Write the new data to a rubias file ####
 # Write out to rubias
 pop_map.FN <- "00_archive/renamed_ind-to-pop.txt" # renamed samples
 genepop_to_rubias_SNP(data = obj_filt, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
                       , pop_map.FN = pop_map.FN)
 
 print("Your output is available as '03_results/rubias_output_SNP.txt")
-save.image(file = "03_results/completed_popgen_analysis_null_alleles.RData")
 
 
-### BEFORE MOVING ANY FURTHER, SAVE AMPLITOOLS RESULTS FOLDER ! ####
+#### Rename rubias file ####
+# Obtain some variables to create filename
+date <- format(Sys.time(), "%Y-%m-%d")
+indiv.n <- nInd(obj_filt)
+loci.n  <- nLoc(obj_filt)
+rubias_custom.FN <- paste0("03_results/rubias_", indiv.n, "_ind_", loci.n, "_loc_", date, ".txt")
 
-## Copy the rubias output to amplitools, and re-run ckmr analysis ##
+# Copy to rename rubias output file
+file.copy(from = "03_results/rubias_output_SNP.txt", to = rubias_custom.FN, overwrite = T)
+print(paste0("The output is saved as ", rubias_custom.FN))
 
+# Save image
+save.image("03_results/post-filters_prepared_for_parentage_rubias_built_problem_genos_rem_rubias_built.RData")
 
-#### Parentage Analysis ####
-# Clear space, and launch amplitools initiator (i.e., 01_scripts/00_initiator.R)
+print("Here you need to copy the above rubias file to amplitools results folder.")
 
-# Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
-# VIU_F1 vs VIU_F2, no monomorph, no multimapper, cleaned
-ckmr_from_rubias(input.FN = "03_prepped_data/cgig_no_monomorphs_no_multimapper_cleaned.txt"
-                 , parent_pop = "F0"
-                 , offspring_pop = "F1"
-                 , cutoff = 5
-)
-
-graph_relatives(input.FN = "03_results/po_VIU_F1_vs_VIU_F2_pw_logl_5.txt", drop_string = ""
-                , plot_width = 8, plot_height = 8, logl_cutoff = 10)
-
-# all_data_and_num_fam_poly_t.df <- t(all_data_and_num_fam_poly.df)
-# dim(all_data_and_num_fam_poly_t.df)
-# all_data_and_num_fam_poly_t.df[1:5,1:5]
-# write.csv(x = all_data_and_num_fam_poly_t.df, file = paste0("03_results/offspring_true_and_false_matches_all_t.csv"), row.names = T)
-
-# for(i in 2:ncol(all_data.df)){
-#   
-#   print(sum(all_data.df[,i], na.rm = T))
-#   
-# }
-
-
+# Go to OCP23_analysis_part_5_2024-02-26.R
