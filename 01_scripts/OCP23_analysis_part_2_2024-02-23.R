@@ -6,7 +6,7 @@
 
 # Clear space, then source simple_pop_stats
 # Load the data
-load(file = "03_results/filtered_genind_before_ckmr.RData")
+load(file = "03_results/post-filters_prepared_for_parentage.RData")
 
 ### TODO: HERE SHOULD DO A PCA ###
 #pca()
@@ -76,24 +76,19 @@ genepop_to_rubias_SNP(data = obj, sample_type = "reference"
 )
 print("Your output is available as '03_results/rubias_output_SNP.txt")
 
-# Copy to retain
-file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools_OCP23_v.0.3/03_results/rubias_output_SNP_all_filtered_loci.txt", overwrite = T)
+# Obtain some variables to create filename
+date <- format(Sys.time(), "%Y-%m-%d")
+indiv.n <- nInd(obj)
+loci.n  <- nLoc(obj)
+rubias_custom.FN <- paste0("03_results/rubias_", indiv.n, "_ind_", loci.n, "_loc_", date, ".txt")
 
-# ## Filtered loci but also with those removed due to null allele occurrences in pilot study
-# drop_loci.FN <- "02_input_data/loci_to_remove_from_pilot.txt"
-# drop_loci(df = obj, drop_file = drop_loci.FN)
-# 
-# genepop_to_rubias_SNP(data = obj_filt, sample_type = "reference"
-#                       , custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
-#                       , pop_map.FN = pop_map.FN
-# )
-# print("Your output is available as '03_results/rubias_output_SNP.txt")
-# # Copy to retain
-# file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_results/rubias_output_SNP_filtered_and_null_pilot_drop.txt", overwrite = T)
+# Copy to rename rubias output file
+file.copy(from = "03_results/rubias_output_SNP.txt", to = rubias_custom.FN, overwrite = T)
+print(paste0("The output is saved as ", rubias_custom.FN))
 
-# Save out image
-save.image("03_results/completed_popgen_analysis.RData")
+# Save image
+save.image("03_results/post-filters_prepared_for_parentage_rubias_built.RData")
 
-
+print("Here you need to copy the above rubias file to amplitools results folder.")
 
 # Go to OCP23_analysis_part_3_2024-02-23.R

@@ -4,7 +4,7 @@
 
 # If you are running from raw data, do step 1. If you've already prepared a genepop, go to step 2. 
 
-#### 01. Prepare genepop in amplitools ####
+### A. Prepare genepop in amplitools ####
 # Open and source amplitools/01_scripts/00_initiator.R
 
 # Convert proton to genepop
@@ -17,14 +17,19 @@ proton_to_genepop(neg_control = "Blank")
 # cp ./02_input_data/prepped_genepops/R_2023_07_26_12_44_23_user_GSS5PR-0268-78-Ampseq_Oyster_20230725_gen_data.gen ../simple_pop_stats/02_input_data/
 
 
-#### 02. Filter in simple_pop_stats ####
+### B. Filter in simple_pop_stats ####
 # Open and source simple_pop_stats/01_scripts/simple_pop_stats_start.R, then choose '9-Pacific oyster'
 ## note: change variable 'on_network' to FALSE
 
+# Required user-input variables or files: 
+counts_per_locus.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/pilot_study/identify_multimappers/counts_per_locus.txt"
+drop_multimappers <- TRUE
+
 #### 01. Load data ####
 load_genepop(datatype = "SNP")
-## note: input file is "02_input_data/R_2023_07_26_12_44_23_user_GSS5PR-0268-78-Ampseq_Oyster_20230725_gen_data.gen"
-head(indNames(obj)) # indiv names are in standard amplitools format
+## note: input file "02_input_data/R_2023_07_26_12_44_23_user_GSS5PR-0268-78-Ampseq_Oyster_20230725_gen_data.gen"
+head(indNames(obj)) # note: indiv names are in standard amplitools format
+
 
 #### 02. Prepare data ####
 # Simplify amplitools names
@@ -138,12 +143,12 @@ legend("bottomleft", legend = unique(plot_cols.df$pop)
 )
 dev.off()
 
-# Filter individuals by missing data
+# Further use of missing data information
 obj.df <- missing_data.df
 head(obj.df)
 dim(obj.df)
 
-## Remove duplicate individuals
+## First, remove duplicate individuals
 # sort by percent missing
 obj.df <- obj.df[with(obj.df, order(ind.per.missing)), ]
 head(obj.df, n = 20)
@@ -257,19 +262,6 @@ plot(per_loc_stats.df$Fst, per_loc_stats.df$Hobs
 )
 dev.off()
 
-## View the ind or loc names
-inds <- indNames(obj)
-loci <- locNames(obj)
-
-# Save out which individuals have passed the filters
-write.table(x = inds, file = "03_results/retained_individuals.txt", sep = "\t", quote = F
-            , row.names = F, col.names = F
-)
-
-write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote = F
-            , row.names = F, col.names = F
-)
-
 
 # Summary of excess HOBS
 table(per_loc_stats.df$Hobs > 0.5) 
@@ -277,20 +269,46 @@ table(per_loc_stats.df$Hobs > 0.5)
 
 
 ##### 03.6 Drop multi-mappers #####
-counts_per_locus.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/pilot_study/identify_multimappers/counts_per_locus.txt"
-counts_per_locus.df <- read.table(file = counts_per_locus.FN, header = F)
-head(counts_per_locus.df)
-colnames(counts_per_locus.df) <- c("count", "mname")
+if(drop_multimappers==TRUE){
+  
+  # Read in the number alignments per locus file
+  counts_per_locus.FN
+  counts_per_locus.df <- read.table(file = counts_per_locus.FN, header = F)
+  head(counts_per_locus.df)
+  colnames(counts_per_locus.df) <- c("count", "mname")
+  
+  # How many have more than one alignment? 
+  loci_to_remove.vec <- counts_per_locus.df[counts_per_locus.df$count > 1, "mname"]
+  length(loci_to_remove.vec)
+  write.table(x = loci_to_remove.vec, file = "03_results/multimapper_loci_to_remove.txt", quote = F, sep = "\t" , row.names = F, col.names = F)
+  
+  drop_loci(df = obj, drop_monomorphic = F, drop_file = "03_results/multimapper_loci_to_remove.txt")
+  obj <- obj_filt
+  
+  
+}else{
+  
+  print("Note: not removing multi-mappers")
+  
+}
 
-# How many have more than one? 
-loci_to_remove.vec <- counts_per_locus.df[counts_per_locus.df$count > 1, "mname"]
-length(loci_to_remove.vec)
-write.table(x = loci_to_remove.vec, file = "03_results/loci_to_remove.txt", quote = F, sep = "\t" , row.names = F, col.names = F)
+## View the ind or loc names
+inds <- indNames(obj)
+length(inds)
+loci <- locNames(obj)
+length(loci)
 
-drop_loci(df = obj, drop_monomorphic = F, drop_file = "03_results/loci_to_remove.txt")
-obj <- obj_filt
+# Save out which individuals have passed the filters
+write.table(x = inds, file = "03_results/post-filters_retain_indiv.txt", sep = "\t", quote = F
+            , row.names = F, col.names = F
+)
+
+write.table(x = loci, file = "03_results/post-filters_retain_loci.txt", sep = "\t", quote = F
+            , row.names = F, col.names = F
+)
+
 
 # Save output
-save.image(file = "03_results/filtered_genind_before_ckmr.RData")
+save.image(file = "03_results/post-filters_prepared_for_parentage.RData")
 
 # Next, go to OCP23_analysis_part_2_2024-02-23.R 
