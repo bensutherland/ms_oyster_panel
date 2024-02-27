@@ -8,6 +8,8 @@
 # Set variables
 max_percent_missing <- 0.3
 correct_ids <- TRUE
+drop_multimappers <- TRUE
+counts_per_locus.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/pilot_study/identify_multimappers/counts_per_locus.txt"
 
 #### 01. Load Data ####
 # Note: if using output of comp_tech_reps, load the RData and your data is obj_nr_best
@@ -261,6 +263,7 @@ obj.all.filt <- obj.filt[, loc=keep]
 # Rename back to obj
 obj <- obj.all.filt
 rm(obj.all.filt)
+obj
 
 
 ##### 03.3 Drop monomorphic loci #####
@@ -269,24 +272,6 @@ obj <- obj_filt
 rm(obj_filt)
 rm(obj.filt)
 gc()
-
-
-##### 03.4 Post-QC info collection #####
-obj
-
-## View the ind or loc names
-inds <- indNames(obj)
-loci <- locNames(obj)
-
-# Save out which individuals have passed the filters
-write.table(x = inds, file = "03_results/retained_individuals.txt", sep = "\t", quote = F
-            , row.names = F, col.names = F
-            )
-
-write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote = F
-            , row.names = F, col.names = F
-)
-
 
 
 ##### 03.5 per marker stats and filters #####
@@ -353,7 +338,50 @@ nrow(hwe_outlier.df)
 write.table(x = hwe_outlier.df, file = "03_results/hwe_outlier_summary.txt", quote = F, sep = "\t", row.names = F)
 
 
-##### 03.5 Post-all filters #####
+##### 03.6 Drop multi-mappers #####
+if(drop_multimappers==TRUE){
+  
+  # Read in the number alignments per locus file
+  counts_per_locus.FN
+  counts_per_locus.df <- read.table(file = counts_per_locus.FN, header = F)
+  head(counts_per_locus.df)
+  colnames(counts_per_locus.df) <- c("count", "mname")
+  
+  # How many have more than one alignment? 
+  loci_to_remove.vec <- counts_per_locus.df[counts_per_locus.df$count > 1, "mname"]
+  length(loci_to_remove.vec)
+  write.table(x = loci_to_remove.vec, file = "03_results/multimapper_loci_to_remove.txt", quote = F, sep = "\t" , row.names = F, col.names = F)
+  
+  drop_loci(df = obj, drop_monomorphic = F, drop_file = "03_results/multimapper_loci_to_remove.txt")
+  obj <- obj_filt
+  
+  
+}else{
+  
+  print("Note: not removing multi-mappers")
+  
+}
+
+
+##### 03.7 Post-QC info collection #####
+obj
+
+## View the ind or loc names
+inds <- indNames(obj)
+loci <- locNames(obj)
+
+# Save out which individuals have passed the filters
+write.table(x = inds, file = "03_results/post-popgen_filters_retain_indiv.txt", sep = "\t", quote = F
+            , row.names = F, col.names = F
+            )
+
+write.table(x = loci, file = "03_results/post-popgen_filters_retain_loci.txt", sep = "\t", quote = F
+            , row.names = F, col.names = F
+)
+
+
+
+##### 03.8 Post-all filters #####
 # Save out colours to be used downstream
 colours
 colnames(x = colours) <- c("collection", "colour")
@@ -362,9 +390,10 @@ write.csv(x = colours, file = "00_archive/formatted_cols.csv", quote = F, row.na
 # Preserve all data before moving into parentage analysis
 obj.bck <- obj
 
+
 # Save output
-save.image("03_results/output_post-filters.Rdata")
-#load("03_results/output_post-filters.Rdata")
+save.image("03_results/post-filters_popgen_dataset.RData")
+
 # Note: can go from here to analyze the relatives and post-purged sibs analysis in the script
 # 01_scripts/sps_popgen_analysis_part_2_relatedness.R
 
@@ -411,30 +440,44 @@ obj
 drop_loci(df = obj, drop_monomorphic = T)
 obj <- obj_filt
 
-counts_per_locus.FN <- "../identify_multimappers/counts_per_locus.txt"
-counts_per_locus.df <- read.table(file = counts_per_locus.FN, header = F)
-head(counts_per_locus.df)
-colnames(counts_per_locus.df) <- c("count", "mname")
+#### Retain information about loci kept for parentage ####
+## View the ind or loc names
+inds <- indNames(obj)
+length(inds)
+loci <- locNames(obj)
+length(loci)
 
-# How many have more than one? 
-loci_to_remove.vec <- counts_per_locus.df[counts_per_locus.df$count > 1, "mname"]
-length(loci_to_remove.vec)
-write.table(x = loci_to_remove.vec, file = "03_results/loci_to_remove.txt", quote = F, sep = "\t" , row.names = F, col.names = F)
+# Save out which individuals have passed the filters
+write.table(x = inds, file = "03_results/post-filters_parentage_retain_indiv.txt", sep = "\t", quote = F
+            , row.names = F, col.names = F
+)
 
-drop_loci(df = obj, drop_monomorphic = T, drop_file = "03_results/loci_to_remove.txt")
-obj <- obj_filt
-obj
+write.table(x = loci, file = "03_results/post-filters_parentage_retain_loci.txt", sep = "\t", quote = F
+            , row.names = F, col.names = F
+)
 
-indNames(obj)
-pop(obj)
 
-# Write out to rubias
-genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
-                      , pop_map.FN = "02_input_data/my_data_ind-to-pop_annot.txt")
-
+## All filtered loci: write to rubias for parentage assignment
+pop_map.FN <- "02_input_data/my_data_ind-to-pop_annot.txt"
+genepop_to_rubias_SNP(data = obj, sample_type = "reference"
+                      , custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
+                      , pop_map.FN = pop_map.FN
+)
 print("Your output is available as '03_results/rubias_output_SNP.txt")
 
-#save.image(file = "03_results/completed_popgen_analysis.RData")
-#load("03_results/completed_popgen_analysis.RData")
-# Using this output, move to "amplitools/01_scripts/demo_analysis.R", and run the ckmr script
+# Obtain some variables to create filename
+date <- format(Sys.time(), "%Y-%m-%d")
+indiv.n <- nInd(obj)
+loci.n  <- nLoc(obj)
+rubias_custom.FN <- paste0("03_results/rubias_", indiv.n, "_ind_", loci.n, "_loc_", date, ".txt")
 
+# Copy to rename rubias output file
+file.copy(from = "03_results/rubias_output_SNP.txt", to = rubias_custom.FN, overwrite = T)
+print(paste0("The output is saved as ", rubias_custom.FN))
+
+# Save image
+save.image("03_results/post-filters_prepared_for_parentage_rubias_built.RData")
+
+print("Here you need to copy the above rubias file to amplitools results folder.")
+
+# Using this output, move to "01_scripts/sps_popgen_analysis_part_2_parentage.R"
