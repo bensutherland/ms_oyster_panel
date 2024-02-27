@@ -9,7 +9,8 @@
 # Clear space, and launch amplitools initiator (i.e., 01_scripts/00_initiator.R)
 
 # Set user variables
-input_rubias.FN <- "03_results/rubias_135_ind_263_loc_2024-02-26.txt"
+#input_rubias.FN <- "03_results/rubias_135_ind_263_loc_2024-02-26.txt"
+input_rubias.FN <- "03_results/rubias_135_ind_300_loc_2024-02-26.txt"
 parent_pop <- "F0"
 offspring_pop <- "F1"
 cutoff <- 5

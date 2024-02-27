@@ -417,7 +417,8 @@ head(result.df)
 hist(result.df$unexp.offsp.geno)
 
 # How many loci have at least two erroneous calls? 
-table(result.df$unexp.offsp.geno >= 2) # 97 (pilot), 80 (OCP)
+# table(result.df$unexp.offsp.geno >= 2) # 97 (pilot), 80 (OCP)
+table(result.df$unexp.offsp.geno >= 4) #  (pilot), 43 (OCP)
 
 # Write out per locus info
 write.csv(x = all_data.df, file = paste0("03_results/per_locus_all_results.csv"), row.names = F)
@@ -425,7 +426,8 @@ write.csv(x = result.df, file = paste0("03_results/per_locus_expected_offsp_geno
 
 
 # What loci are erroneous in at least two offspring? 
-loci_to_drop <- result.df[result.df$unexp.offsp.geno >= 2, "mname"]
+# loci_to_drop <- result.df[result.df$unexp.offsp.geno >= 2, "mname"]
+loci_to_drop <- result.df[result.df$unexp.offsp.geno >= 4, "mname"]
 
 # write it out
 write.table(x = loci_to_drop, file = "03_results/markers_with_unexpected_genos_in_offspring.txt"
