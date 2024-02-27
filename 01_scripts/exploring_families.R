@@ -417,7 +417,14 @@ result.df$percent.exp.offsp.geno <- formatC(x = result.df$percent.exp.offsp.geno
 head(result.df)
 
 # What is the distribution of the erroneous calls?
-hist(result.df$unexp.offsp.geno)
+pdf(file = "03_results/hist_per_locus_num_unexpected_genos.pdf", width = 6.5, height = 4)
+hist(result.df$unexp.offsp.geno
+     , main = ""
+     , las = 1
+     , xlab = "Per locus, number of indiv. with unexpected genos"
+     )
+dev.off()
+
 
 # How many loci have at least two erroneous calls? 
 # table(result.df$unexp.offsp.geno >= 2) # 97 (pilot), 80 (OCP)
