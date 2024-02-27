@@ -6,8 +6,11 @@
 load(file = "03_results/post-filters_prepared_for_parentage_rubias_built.RData")
 
 # Set variable depending on the dataset
-report.FN <- "../amplitools_OCP23_v.0.3/03_results/ckmr_input_rubias_135_ind_343_loc_2024-02-26_F1_vs_F0_2024-02-26/po_F0_vs_F1_pw_logl_5_report.txt"
-#report.FN <-    # pilot study
+#report.FN <- "../amplitools_OCP23_v.0.3/03_results/ckmr_input_rubias_135_ind_343_loc_2024-02-26_F1_vs_F0_2024-02-26/po_F0_vs_F1_pw_logl_5_report.txt"
+report.FN <-  "../amplitools_v.0.5_2024-02-20/03_results/ckmr_input_rubias_142_ind_380_loc_2024-02-27_VIU_F2_vs_VIU_F1_2024-02-27/po_VIU_F1_vs_VIU_F2_pw_logl_5_report.txt"  # pilot study
+
+#pop_map.FN <- "00_archive/renamed_ind-to-pop.txt" # OCP study
+pop_map.FN <- "02_input_data/my_data_ind-to-pop_annot.txt" # pilot study
 
 # Note: make sure you have already set the following variables
 report.FN
@@ -444,7 +447,8 @@ obj_filt
 
 #### Write the new data to a rubias file ####
 # Write out to rubias
-pop_map.FN <- "00_archive/renamed_ind-to-pop.txt" # renamed samples
+pop_map.FN  # renamed samples
+
 genepop_to_rubias_SNP(data = obj_filt, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
                       , pop_map.FN = pop_map.FN)
 
@@ -467,4 +471,4 @@ save.image("03_results/post-filters_prepared_for_parentage_rubias_built_problem_
 
 print("Here you need to copy the above rubias file to amplitools results folder.")
 
-# Go to OCP23_analysis_part_5_2024-02-26.R
+# Go to OCP23_analysis_part_5_2024-02-26.R or 
