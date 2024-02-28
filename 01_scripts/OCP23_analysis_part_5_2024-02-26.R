@@ -42,8 +42,8 @@ ckmr_from_rubias(input.FN = input_rubias.FN
 # )
 
 # Plot the output results
-graph_relatives(input.FN = "03_results/ckmr_input_rubias_135_ind_263_loc_2024-02-26_F1_vs_F0_2024-02-26/po_F0_vs_F1_pw_logl_5.txt"
-                , logl_cutoff = 10
+graph_relatives(input.FN = "03_results/ckmr_input_rubias_135_ind_300_loc_2024-02-26_F1_vs_F0_2024-02-26/po_F0_vs_F1_pw_logl_5.txt"
+                , logl_cutoff = 5
                 , drop_string = "", directed = F
                 , plot_width = 8, plot_height = 8
 )
