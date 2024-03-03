@@ -39,25 +39,6 @@ poly_loci.list
 poly_loci_maf.list
 
 
-## Private alleles
-regional_obj <- obj
-
-# Combine related pops to query private alleles at regional level
-unique(pop(regional_obj))
-pop(regional_obj) <- gsub(pattern = "VIU_F0|VIU_F1|VIU_F2", replacement = "VIU", x = pop(regional_obj)) # combine VIU
-pop(regional_obj) <- gsub(pattern = "PEN|FRA|JPN", replacement = "JPN", x = pop(regional_obj))              # combine JPN lineage
-unique(pop(regional_obj))
-
-pa <- private_alleles(gid = regional_obj)
-write.csv(x = pa, file = "03_results/private_alleles.csv", quote = F)
-
-save.image(file = "03_results/post-filters_genind_and_enviro.RData")
-
-# Confirm pops are as expected in obj
-as.data.frame(cbind(indNames(obj), as.character(pop(obj))))
-
-
-
 # Additional analysis of the per loc stats related to the reason for selecting markers
 perloc.FN <- "./03_results/per_locus_stats_2023-08-16.txt"
 marker_reason.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/ms_oyster_panel_used_for_design_2022-02-07/04_extract_loci/selected_mnames.csv"
