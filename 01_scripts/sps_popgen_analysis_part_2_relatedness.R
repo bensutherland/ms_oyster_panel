@@ -4,10 +4,32 @@
 
 #### 00. Set up ####
 # Source simple_pop_stats and choose Pacific oyster
-load(file = "03_results/output_post-filters.Rdata")
+#load(file = "03_results/output_post-filters.Rdata")
+load(file = "03_results/post-filters_prepared_for_parentage_rubias_built.RData")
 
 # Working with the following: 
-obj
+obj # this has the correct number of loci (380), but only has the parentage inds
+table(pop(obj.bck)) # this has all inds, but too many loci
+
+# Keep the filtered loci from the full dataset
+keep <- locNames(obj)
+obj <- obj.bck[, loc = keep]
+obj # 312 inds, 380 loci, OK
+
+
+##### Private alleles ####
+regional_obj <- obj
+
+# Combine similar collections prior to identifying private alleles
+unique(pop(regional_obj))
+pop(regional_obj) <- gsub(pattern = "VIU_F0|VIU_F1|VIU_F2", replacement = "VIU", x = pop(regional_obj)) # combine VIU
+pop(regional_obj) <- gsub(pattern = "PEN|FRA|JPN", replacement = "JPN", x = pop(regional_obj))              # combine JPN lineage
+unique(pop(regional_obj))
+table(pop(regional_obj))
+
+pa <- private_alleles(gid = regional_obj)
+write.csv(x = pa, file = "03_results/private_alleles.csv", quote = F)
+
 
 ##### 03.6 Relatedness ####
 ## Identify putative close relatives
@@ -45,6 +67,44 @@ unique(rel.df$group)
 boxplot(rel.df$ritland, las = 1)
 median(rel.df$ritland) # -0.0167
 min(boxplot.stats(rel.df$ritland)$out[boxplot.stats(rel.df$ritland)$out > median(rel.df$ritland)]) # 0.1489
+
+# Check full-sibs of VIU pops
+col1 <- grep(pattern = "VIU_F2", x = rel.df$ind1.id)
+col2 <- grep(pattern = "VIU_F2", x = rel.df$ind2.id)
+keep_rows <- c(col1, col2)
+rel_VIU_F2.df <- rel.df[keep_rows,]
+head(rel_VIU_F2.df)
+
+# Keep only those that have VIU_F2 in both
+rel_VIU_F2.df <- separate(data = rel_VIU_F2.df, col = "ind1.id", into = c("pop1", "ind1"), sep = "__", remove = F)
+rel_VIU_F2.df <- separate(data = rel_VIU_F2.df, col = "ind2.id", into = c("pop2", "ind2"), sep = "__", remove = F)
+head(rel_VIU_F2.df)
+rel_VIU_F2.df$selection_factor  <- paste0(rel_VIU_F2.df$pop1, "__", rel_VIU_F2.df$pop2)
+head(rel_VIU_F2.df)
+rel_VIU_F2.df <- rel_VIU_F2.df[rel_VIU_F2.df$selection_factor=="VIU_F2__VIU_F2", ]
+
+head(rel_VIU_F2.df)
+rel_VIU_F2.df <- separate(data = rel_VIU_F2.df, col = "ind1", into = c("family1", "individual1"), sep = "-", remove = F)
+rel_VIU_F2.df <- separate(data = rel_VIU_F2.df, col = "ind2", into = c("family2", "individual2"), sep = "-", remove = F)
+head(rel_VIU_F2.df)
+
+fams <- unique(rel_VIU_F2.df$family1)
+slice <- NULL; result.vec <- NULL; min.vec <- NULL
+for(i in 1:length(fams)){
+  
+  slice <- rel_VIU_F2.df[rel_VIU_F2.df$family1==fams[i] & rel_VIU_F2.df$family2==fams[i], ]
+  
+  print(paste0(fams[i], " mean Ritland is ", round(mean(slice$ritland), digits = 2)))
+  result.vec <- c(result.vec, mean(slice$ritland))
+  
+  print(paste0(fams[i], " min Ritland is ", round(min(slice$ritland), digits = 2)))
+  min.vec <- c(min.vec, min(slice$ritland))
+  
+}
+
+mean(result.vec)
+mean(min.vec)
+
 
 ## Approach to investigate outliers
 # # Set variables of interest
@@ -99,7 +159,10 @@ min(boxplot.stats(rel.df$ritland)$out[boxplot.stats(rel.df$ritland)$out > median
 
 # Then use the cutoff value to inspect the excel document to ID the pairs, removing one of every two pairs until no outlier pairs remain.
 
-id_close_kin(cutoff = 0.23, statistic = "ritland")
+cutoff <- 0.29
+#cutoff <- 0.48
+
+id_close_kin(cutoff = cutoff, statistic = "ritland")
 # Will operate on the latest pairwise relatedness oject in the results folder
 
 str(drop.list) # shows how many inds are selected to be dropped from each pop
@@ -141,7 +204,7 @@ pca_from_genind(data = obj_purged_relatives, PCs_ret = 4, colour_file = "00_arch
 # dapc_from_genind(data = obj, plot_allele_loadings = TRUE, colour_file = "00_archive/formatted_cols.csv")
 
 ## Dendrogram
-make_tree(bootstrap = TRUE, boot_obj = obj_purged_relatives, nboots = 10000, dist_metric = "edwards.dist", separated = FALSE)
+#make_tree(bootstrap = TRUE, boot_obj = obj_purged_relatives, nboots = 10000, dist_metric = "edwards.dist", separated = FALSE)
 
 ## Drop low sample size pops
 table(pop(obj_purged_relatives))
@@ -151,3 +214,6 @@ table(pop(obj_pop_filt))
 
 ## Genetic differentiation
 calculate_FST(format = "genind", dat = obj_pop_filt, separated = FALSE, bootstrap = TRUE)
+
+save.image(file = "03_results/popgen_after_purging_close_relatives.RData")
+
