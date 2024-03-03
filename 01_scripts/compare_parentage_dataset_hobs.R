@@ -46,7 +46,7 @@ p
 
 num_loci <- paste0(nrow(per_loc_stats_both_datasets.df), " loci")
 
-p <- p + geom_text(x = 0.1, y = 0.77, label = num_loci)
+p <- p + geom_text(x = 0.1, y = 0.77, label = num_loci, check_overlap = T)
 p
 
 # rename to keep
@@ -79,7 +79,7 @@ p
 
 num_loci <- paste0(nrow(per_loc_stats_popgen.df), " loci")
 
-p <- p + geom_text(x = 0.25, y = 0.65, label = num_loci)
+p <- p + geom_text(x = 0.25, y = 0.65, label = num_loci, check_overlap = T)
 p
 
 # rename to keep
