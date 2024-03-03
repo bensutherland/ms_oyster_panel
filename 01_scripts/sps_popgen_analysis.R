@@ -185,7 +185,7 @@ plot(100 * (1 - plot_cols.df$ind.per.missing), ylab = "Genotyping rate (%)"
      , cex = plot_cex
      )
 
-abline(h = 50, lty = 3)
+abline(h = 70, lty = 3)
 
 legend("bottomleft", legend = unique(plot_cols.df$pop)
        , fill = unique(plot_cols.df$my.cols)
@@ -245,7 +245,7 @@ plot(100 * (1- obj.df$marker.per.missing), xlab = "Marker", ylab = "Genotyping r
      , pch = plot_pch
      , cex = plot_cex
      )
-abline(h = 50
+abline(h = 70
        #, col = "grey60"
        , lty = 3)
 dev.off()
@@ -481,3 +481,5 @@ save.image("03_results/post-filters_prepared_for_parentage_rubias_built.RData")
 print("Here you need to copy the above rubias file to amplitools results folder.")
 
 # Using this output, move to "01_scripts/sps_popgen_analysis_part_2_parentage.R"
+# OR
+# move to "01_scripts/sps_popgen_analysis_part_2_relatedness.R" for additional popgen analyses
