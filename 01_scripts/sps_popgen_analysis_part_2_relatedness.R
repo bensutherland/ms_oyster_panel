@@ -4,18 +4,25 @@
 
 #### 00. Set up ####
 # Source simple_pop_stats and choose Pacific oyster
+
+# User set variables
+marker_reason.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/pilot_study/z-draft_analyses/ms_oyster_panel_used_for_design_2022-02-07/04_extract_loci/selected_mnames.csv"
+
 #load(file = "03_results/output_post-filters.Rdata")
 load(file = "03_results/post-filters_prepared_for_parentage_rubias_built.RData")
 
 # Working with the following: 
-obj # this has the correct number of loci (380), but only has the parentage inds
-table(pop(obj.bck)) # this has all inds, but too many loci
+obj.bck # 312 inds, 425 loci
+table(pop(obj.bck)) # this has all inds
 
-# Keep the filtered loci from the full dataset
-keep <- locNames(obj)
-obj <- obj.bck[, loc = keep]
-obj # 312 inds, 380 loci, OK
+obj <- obj.bck
 
+# /START/ no longer used /
+# # Keep the filtered loci from the full dataset
+# keep <- locNames(obj)
+# obj <- obj.bck[, loc = keep]
+# obj # 312 inds, 380 loci, OK
+# /END/ no longer used / 
 
 ##### Private alleles ####
 regional_obj <- obj
@@ -65,8 +72,8 @@ unique(rel.df$group)
 
 # If we ignore the groupings, and just look at the pairs of all individuals, what is the level that outlier is designated?
 boxplot(rel.df$ritland, las = 1)
-median(rel.df$ritland) # -0.0167
-min(boxplot.stats(rel.df$ritland)$out[boxplot.stats(rel.df$ritland)$out > median(rel.df$ritland)]) # 0.1489
+median(rel.df$ritland) # -0.0168
+min(boxplot.stats(rel.df$ritland)$out[boxplot.stats(rel.df$ritland)$out > median(rel.df$ritland)]) # 0.1519
 
 # Check full-sibs of VIU pops
 col1 <- grep(pattern = "VIU_F2", x = rel.df$ind1.id)
@@ -159,8 +166,8 @@ mean(min.vec)
 
 # Then use the cutoff value to inspect the excel document to ID the pairs, removing one of every two pairs until no outlier pairs remain.
 
-cutoff <- 0.29
-#cutoff <- 0.48
+cutoff <- 0.26
+#cutoff <- 0.43
 
 id_close_kin(cutoff = cutoff, statistic = "ritland")
 # Will operate on the latest pairwise relatedness oject in the results folder
@@ -192,7 +199,10 @@ keep.inds <- setdiff(indNames(obj), drop.inds)
 obj_purged_relatives <- obj[(keep.inds)]
 table(pop(obj_purged_relatives))
 
-table(pop(obj))
+# And before removing? 
+keep.inds <- setdiff(indNames(obj), QDC.inds)
+obj_wo_QDC <- obj[(keep.inds)]
+table(pop(obj_wo_QDC))
 
 
 #### 04. Analysis ####
@@ -215,5 +225,55 @@ table(pop(obj_pop_filt))
 ## Genetic differentiation
 calculate_FST(format = "genind", dat = obj_pop_filt, separated = FALSE, bootstrap = TRUE)
 
+
+##### Additional analysis of the per loc stats related to the reason for selecting markers ####
+obj # should be 312 inds, 425 loci
+per_locus_stats(data = obj)
+
+head(per_loc_stats.df)
+dim(per_loc_stats.df)
+
+# Load the reason for designing each locus file
+#TODO: this should be supplied on FigShare or similar
+reason.df <- read.table(file = marker_reason.FN, header = F, sep = ",")
+colnames(reason.df) <- c("mname", "reason")
+reason.df <- as.data.frame(reason.df)
+head(reason.df)
+
+reason.df <- separate(data = reason.df, col = "mname"
+                      , into = c("mname", "pos", "nucl"), sep = "_"
+                      , remove = TRUE
+)
+
+head(reason.df)
+reason.df <- reason.df[,c("mname", "reason")]
+head(reason.df)
+dim(reason.df)
+
+# Combine
+all.df <- merge(x = per_loc_stats.df, y = reason.df, by = "mname", all.x = T)
+head(all.df)
+dim(all.df)
+multi_reason_markers.vec <- all.df[duplicated(x = all.df$mname), "mname"] # these markers were selected for multiple reasons, both top_FST and top_HOBS
+
+all.df[all.df$mname %in% multi_reason_markers.vec, ]
+all.df[all.df$mname %in% multi_reason_markers.vec, "reason"] <- "FST_and_HOBS"
+
+# Drop duplicated, as now covered in both
+all.df <- all.df[!duplicated(x = all.df$mname), ]
+dim(all.df)
+
+table(all.df[all.df$Hobs > 0.25, "reason"])
+length(all.df[all.df$Hobs > 0.25, "reason"])
+
+table(all.df[all.df$Hobs <= 0.25, "reason"])
+length(all.df[all.df$Hobs <= 0.25, "reason"])
+
+
+
+
 save.image(file = "03_results/popgen_after_purging_close_relatives.RData")
+
+
+
 

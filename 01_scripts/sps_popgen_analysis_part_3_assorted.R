@@ -39,32 +39,3 @@ poly_loci.list
 poly_loci_maf.list
 
 
-# Additional analysis of the per loc stats related to the reason for selecting markers
-perloc.FN <- "./03_results/per_locus_stats_2023-08-16.txt"
-marker_reason.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/ms_oyster_panel_used_for_design_2022-02-07/04_extract_loci/selected_mnames.csv"
-
-perloc.df <- read.table(file = perloc.FN, header = T, sep = "\t")
-head(perloc.df)
-
-reason.df <- read.table(file = marker_reason.FN, header = F, sep = ",")
-colnames(reason.df) <- c("mname", "reason")
-reason.df <- as.data.frame(reason.df)
-head(reason.df)
-
-reason.df <- separate(data = reason.df, col = "mname"
-                      , into = c("mname", "pos", "nucl"), sep = "_"
-                      , remove = TRUE
-)
-head(reason.df)
-reason.df <- reason.df[,c("mname", "reason")]
-head(reason.df)
-
-# Combine
-all.df <- merge(x = perloc.df, y = reason.df, by = "mname", all.x = T)
-head(all.df)
-
-table(all.df[all.df$Hobs > 0.25, "reason"])
-length(all.df[all.df$Hobs > 0.25, "reason"])
-
-table(all.df[all.df$Hobs <= 0.25, "reason"])
-length(all.df[all.df$Hobs <= 0.25, "reason"])
