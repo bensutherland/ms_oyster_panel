@@ -12,17 +12,10 @@ marker_reason.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/
 load(file = "03_results/post-filters_prepared_for_parentage_rubias_built.RData")
 
 # Working with the following: 
-obj.bck # 312 inds, 425 loci
+obj.bck # 312 inds, 409 loci
 table(pop(obj.bck)) # this has all inds
 
 obj <- obj.bck
-
-# /START/ no longer used /
-# # Keep the filtered loci from the full dataset
-# keep <- locNames(obj)
-# obj <- obj.bck[, loc = keep]
-# obj # 312 inds, 380 loci, OK
-# /END/ no longer used / 
 
 ##### Private alleles ####
 regional_obj <- obj
@@ -72,8 +65,8 @@ unique(rel.df$group)
 
 # If we ignore the groupings, and just look at the pairs of all individuals, what is the level that outlier is designated?
 boxplot(rel.df$ritland, las = 1)
-median(rel.df$ritland) # -0.0168
-min(boxplot.stats(rel.df$ritland)$out[boxplot.stats(rel.df$ritland)$out > median(rel.df$ritland)]) # 0.1519
+median(rel.df$ritland) # -0.0165
+min(boxplot.stats(rel.df$ritland)$out[boxplot.stats(rel.df$ritland)$out > median(rel.df$ritland)]) # 0.1533
 
 # Check full-sibs of VIU pops
 col1 <- grep(pattern = "VIU_F2", x = rel.df$ind1.id)
@@ -109,66 +102,15 @@ for(i in 1:length(fams)){
   
 }
 
-mean(result.vec)
-mean(min.vec)
+mean(result.vec) # 0.431
+mean(min.vec).   # 0.259
+length(result.vec)
 
-
-## Approach to investigate outliers
-# # Set variables of interest
-# #popn <- "JPN"
-# #popn <- "CHN"
-# #popn <- "FRA"
-# #popn <- "DPB"
-# #popn <- "GUR"
-# #popn <- "PEN"
-# #popn <- "VIU"
-# 
-# compare.group <- paste0(substr(x = popn, 1,2), substr(x = popn, 1,2))
-# 
-# # How many unique inds are there in the selected pop? 
-# all_inds.vec  <- c(rel.df$ind1.id, rel.df$ind2.id)
-# uniq_inds.vec <- unique(all_inds.vec[grep(pattern = popn, x = all_inds.vec)])
-# length(uniq_inds.vec)
-# 
-# # Select related stat
-# statistic <- "ritland"
-# 
-# # Inspect same-on-same distribution of values
-# print(paste0("Identifying outliers using the ", statistic, " statistic"))
-# 
-# # How many?
-# length(rel.df[rel.df$group==compare.group, statistic])
-# 
-# obs_rel.vec <- rel.df[rel.df$group==compare.group, statistic]
-# 
-# # Calculate 
-# median(obs_rel.vec)
-# boxplot.stats(obs_rel.vec)$out
-# 
-# # Upper outliers
-# boxplot.stats(obs_rel.vec)$out[boxplot.stats(obs_rel.vec)$out > median(obs_rel.vec)]
-# num_outliers <- length(boxplot.stats(obs_rel.vec)$out[boxplot.stats(obs_rel.vec)$out > median(obs_rel.vec)])
-# print(paste0("This relatedness statistic identifies ", num_outliers, " outlier pairs"))
-# cutoff <- min(boxplot.stats(obs_rel.vec)$out[boxplot.stats(obs_rel.vec)$out > median(obs_rel.vec)])
-# cutoff
-# 
-# pdf(file = paste0("03_results/related_dist_", compare.group, "_", statistic, ".pdf")
-#     , width = 9, height = 5)
-# par(mfrow=c(1,2))
-# boxplot(obs_rel.vec, las = 1, main = compare.group
-#         , ylab = statistic)
-# abline(h = cutoff, lty = 3)
-# 
-# plot(obs_rel.vec, las = 1, main = compare.group
-#      , ylab = statistic)
-# abline(h = cutoff, lty = 3)
-# dev.off()
-
-# Then use the cutoff value to inspect the excel document to ID the pairs, removing one of every two pairs until no outlier pairs remain.
-
+# Set cutoffs based on the above
 cutoff <- 0.26
 #cutoff <- 0.43
 
+# note: need to source from dev scripts
 id_close_kin(cutoff = cutoff, statistic = "ritland")
 # Will operate on the latest pairwise relatedness oject in the results folder
 
@@ -227,14 +169,13 @@ calculate_FST(format = "genind", dat = obj_pop_filt, separated = FALSE, bootstra
 
 
 ##### Additional analysis of the per loc stats related to the reason for selecting markers ####
-obj # should be 312 inds, 425 loci
+obj # should be 312 inds, 409 loci
 per_locus_stats(data = obj)
 
 head(per_loc_stats.df)
 dim(per_loc_stats.df)
 
 # Load the reason for designing each locus file
-#TODO: this should be supplied on FigShare or similar
 reason.df <- read.table(file = marker_reason.FN, header = F, sep = ",")
 colnames(reason.df) <- c("mname", "reason")
 reason.df <- as.data.frame(reason.df)

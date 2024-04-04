@@ -9,7 +9,7 @@
 # Clear space, and launch amplitools initiator (i.e., 01_scripts/00_initiator.R)
 
 # Set user variables
-input_rubias.FN <- "03_results/rubias_142_ind_380_loc_2024-02-27.txt"
+input_rubias.FN <- "03_results/rubias_142_ind_364_loc_2024-04-03.txt"
 parent_pop <- "VIU_F1"
 offspring_pop <- "VIU_F2"
 cutoff <- 5
@@ -41,14 +41,9 @@ ckmr_from_rubias(input.FN = input_rubias.FN
 # )
 
 # Plot the output results
-graph_relatives(input.FN = "03_results/ckmr_input_rubias_142_ind_380_loc_2024-02-27_VIU_F2_vs_VIU_F1_2024-02-27/po_VIU_F1_vs_VIU_F2_pw_logl_5.txt", logl_cutoff = 5
+graph_relatives(input.FN = "03_results/ckmr_input_rubias_142_ind_364_loc_2024-04-03_VIU_F2_vs_VIU_F1_2024-04-03/po_VIU_F1_vs_VIU_F2_pw_logl_5.txt", logl_cutoff = 5
                 , drop_string = "", directed = F, plot_width = 8, plot_height = 8
 )
 
-# # Before going to the next script, set some variables
-# report.FN <- "03_results/parentage_with_all_filtered_loci/po_F0_vs_F1_pw_logl_5_report.txt"
-
 save.image(paste0(run_folder.FN, "/ckmr_completed.RData"))
-
 # Now go to 01_scripts/exploring_families.R
-
