@@ -9,7 +9,7 @@
 max_percent_missing <- 0.3
 correct_ids <- TRUE
 drop_multimappers <- TRUE
-counts_per_locus.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/pilot_study/identify_multimappers/counts_per_locus.txt"
+counts_per_locus.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/pilot_study/identify_multimappers/counts_per_locus_bowtie2.txt"
 
 #### 01. Load Data ####
 # Note: if using output of comp_tech_reps, load the RData and your data is obj_nr_best
@@ -272,6 +272,33 @@ obj <- obj_filt
 rm(obj_filt)
 rm(obj.filt)
 gc()
+obj
+
+
+##### 03.4 Drop multi-mappers #####
+if(drop_multimappers==TRUE){
+  
+  # Read in the number alignments per locus file
+  counts_per_locus.FN
+  counts_per_locus.df <- read.table(file = counts_per_locus.FN, header = F)
+  head(counts_per_locus.df)
+  colnames(counts_per_locus.df) <- c("count", "mname")
+  
+  # How many have more than one alignment? 
+  loci_to_remove.vec <- counts_per_locus.df[counts_per_locus.df$count > 1, "mname"]
+  length(loci_to_remove.vec)
+  write.table(x = loci_to_remove.vec, file = "03_results/multimapper_loci_to_remove.txt", quote = F, sep = "\t" , row.names = F, col.names = F)
+  
+  drop_loci(df = obj, drop_monomorphic = F, drop_file = "03_results/multimapper_loci_to_remove.txt")
+  obj <- obj_filt
+  
+  
+}else{
+  
+  print("Note: not removing multi-mappers")
+  
+}
+obj
 
 
 ##### 03.5 per marker stats and filters #####
@@ -280,11 +307,10 @@ per_locus_stats(data = obj)
 head(per_loc_stats.df)
 nrow(per_loc_stats.df)
 
-
 ## Density plot stats
 # Do high FST markers have lower heterozygosity?
 head(per_loc_stats.df)
-table(per_loc_stats.df$Fst > 0.05)
+#table(per_loc_stats.df$Fst > 0.05)
 
 # Plot Fst by Hobs
 pdf(file = "03_results/per_locus_Fst_v_Hobs.pdf", width = 8, height = 5)
@@ -300,15 +326,6 @@ dev.off()
 
 # How many loci have more than 0.5 HOBS? 
 table(per_loc_stats.df$Hobs > 0.5)
-
-## Optional for dropping Hobs > 0.5 markers ## 
-# # Which markers are greater than 0.5 heterozygosity? 
-# keep <- setdiff(x = locNames(obj), y = hobs.outliers)
-# # Drop Hobs > 0.5 loci from genind
-# obj <- obj[, loc=keep]
-# obj
-## /end/ Optional for dropping ##
-
 
 ## Hardy-Weinberg, only on wild samples though ##
 # Remove cultured CHN samples, previously unknown but now noted as QDC samples
@@ -338,33 +355,9 @@ nrow(hwe_outlier.df)
 write.table(x = hwe_outlier.df, file = "03_results/hwe_outlier_summary.txt", quote = F, sep = "\t", row.names = F)
 
 
-##### 03.6 Drop multi-mappers #####
-if(drop_multimappers==TRUE){
-  
-  # Read in the number alignments per locus file
-  counts_per_locus.FN
-  counts_per_locus.df <- read.table(file = counts_per_locus.FN, header = F)
-  head(counts_per_locus.df)
-  colnames(counts_per_locus.df) <- c("count", "mname")
-  
-  # How many have more than one alignment? 
-  loci_to_remove.vec <- counts_per_locus.df[counts_per_locus.df$count > 1, "mname"]
-  length(loci_to_remove.vec)
-  write.table(x = loci_to_remove.vec, file = "03_results/multimapper_loci_to_remove.txt", quote = F, sep = "\t" , row.names = F, col.names = F)
-  
-  drop_loci(df = obj, drop_monomorphic = F, drop_file = "03_results/multimapper_loci_to_remove.txt")
-  obj <- obj_filt
-  
-  
-}else{
-  
-  print("Note: not removing multi-mappers")
-  
-}
-
-
-##### 03.7 Post-QC info collection #####
+##### 03.6 Post-QC info collection #####
 obj
+
 
 ## View the ind or loc names
 inds <- indNames(obj)
@@ -381,7 +374,7 @@ write.table(x = loci, file = "03_results/post-popgen_filters_retain_loci.txt", s
 
 
 
-##### 03.8 Post-all filters #####
+##### 03.7 Post-all filters #####
 # Save out colours to be used downstream
 colours
 colnames(x = colours) <- c("collection", "colour")
@@ -394,8 +387,7 @@ obj.bck <- obj
 # Save output
 save.image("03_results/post-filters_popgen_dataset.RData")
 
-# Note: can go from here to analyze the relatives and post-purged sibs analysis in the script
-# 01_scripts/sps_popgen_analysis_part_2_relatedness.R
+
 
 # Or continue below
 
@@ -440,6 +432,7 @@ obj
 drop_loci(df = obj, drop_monomorphic = T)
 obj <- obj_filt
 
+
 #### Retain information about loci kept for parentage ####
 ## View the ind or loc names
 inds <- indNames(obj)
@@ -483,3 +476,4 @@ print("Here you need to copy the above rubias file to amplitools results folder.
 # Using this output, move to "01_scripts/sps_popgen_analysis_part_2_parentage.R"
 # OR
 # move to "01_scripts/sps_popgen_analysis_part_2_relatedness.R" for additional popgen analyses
+# to analyze the relatives and post-purged sibs analysis in the script
