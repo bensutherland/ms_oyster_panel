@@ -8,8 +8,8 @@
 # Load the data
 load(file = "03_results/post-filters_prepared_for_parentage.RData")
 
-### TODO: HERE SHOULD DO A PCA ###
-#pca()
+# PCA
+pca_from_genind(data = obj, PCs_ret = 4, plot_eigen = F, plot_allele_loadings = F, retain_pca_obj = T)
 
 #### 04. Prepare rubias input file ####
 ## Convert genepop to Rubias format
