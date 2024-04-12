@@ -6,11 +6,11 @@
 load(file = "03_results/post-filters_prepared_for_parentage_rubias_built.RData")
 
 # Set variable depending on the dataset
-#report.FN <- "../amplitools_OCP23_v.0.3/03_results/ckmr_input_rubias_135_ind_343_loc_2024-02-26_F1_vs_F0_2024-02-26/po_F0_vs_F1_pw_logl_5_report.txt"
-report.FN <-  "../amplitools_v.0.6/03_results/ckmr_input_rubias_142_ind_364_loc_2024-04-03_VIU_F2_vs_VIU_F1_2024-04-03/po_VIU_F1_vs_VIU_F2_pw_logl_5_report.txt"  # pilot study
+report.FN <- "../amplitools/03_results/ckmr_input_rubias_135_ind_324_loc_2024-04-04_F1_vs_F0_2024-04-04/po_F0_vs_F1_pw_logl_5_report.txt"
+#report.FN <-  "../amplitools_v.0.6/03_results/ckmr_input_rubias_142_ind_364_loc_2024-04-03_VIU_F2_vs_VIU_F1_2024-04-03/po_VIU_F1_vs_VIU_F2_pw_logl_5_report.txt"  # pilot study
 
-#pop_map.FN <- "00_archive/renamed_ind-to-pop.txt" # OCP study
-pop_map.FN <- "02_input_data/my_data_ind-to-pop_annot.txt" # pilot study
+pop_map.FN <- "00_archive/renamed_ind-to-pop.txt" # OCP study
+#pop_map.FN <- "02_input_data/my_data_ind-to-pop_annot.txt" # pilot study
 
 # Note: make sure you have already set the following variables
 report.FN
@@ -87,12 +87,12 @@ obj.bck <- obj
 offspring_to_keep <- empirical_family_map.df$offspring
 parents_to_keep   <- unique(c(empirical_family_map.df$parent1,  empirical_family_map.df$parent2))
 inds_to_keep <- c(offspring_to_keep, parents_to_keep)
-length(offspring_to_keep) # 37 (pilot), 41 (OCP)
-length(parents_to_keep)   # 16 (pilot), 15 (OCP)
-length(inds_to_keep)      # 53 (pilot), 56 (OCP)
+length(offspring_to_keep) # 37 (pilot), 38 (OCP)
+length(parents_to_keep)   # 16 (pilot), 14 (OCP)
+length(inds_to_keep)      # 53 (pilot), 52 (OCP)
 
 obj <- obj[inds_to_keep]
-
+obj
 
 #### 02. Determine expected offspring genos ####
 
@@ -432,8 +432,8 @@ dev.off()
 
 
 # How many loci have at least two erroneous calls? 
-# table(result.df$unexp.offsp.geno >= 2) # 95 (pilot), 80 (OCP)
-table(result.df$unexp.offsp.geno >= 4) # 36 (pilot), 43 (OCP)
+# table(result.df$unexp.offsp.geno >= 2) # 95 (pilot), 73 (OCP)
+table(result.df$unexp.offsp.geno >= 4) # 36 (pilot), 35 (OCP)
 
 # Write out per locus info
 write.csv(x = all_data.df, file = paste0("03_results/per_locus_all_results.csv"), row.names = F)
