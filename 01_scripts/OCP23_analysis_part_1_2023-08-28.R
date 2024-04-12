@@ -22,7 +22,7 @@ proton_to_genepop(neg_control = "Blank")
 ## note: change variable 'on_network' to FALSE
 
 # Required user-input variables or files: 
-counts_per_locus.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/pilot_study/identify_multimappers/counts_per_locus.txt"
+counts_per_locus.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/pilot_study/identify_multimappers/counts_per_locus_bowtie2.txt"
 drop_multimappers <- TRUE
 
 #### 01. Load data ####
@@ -237,6 +237,33 @@ obj <- obj_filt
 obj
 
 
+##### 03.4 Drop multi-mappers #####
+if(drop_multimappers==TRUE){
+  
+  # Read in the number alignments per locus file
+  counts_per_locus.FN
+  counts_per_locus.df <- read.table(file = counts_per_locus.FN, header = F)
+  head(counts_per_locus.df)
+  colnames(counts_per_locus.df) <- c("count", "mname")
+  
+  # How many have more than one alignment? 
+  loci_to_remove.vec <- counts_per_locus.df[counts_per_locus.df$count > 1, "mname"]
+  length(loci_to_remove.vec)
+  write.table(x = loci_to_remove.vec, file = "03_results/multimapper_loci_to_remove.txt", quote = F, sep = "\t" , row.names = F, col.names = F)
+  
+  drop_loci(df = obj, drop_monomorphic = F, drop_file = "03_results/multimapper_loci_to_remove.txt")
+  obj <- obj_filt
+  
+  
+}else{
+  
+  print("Note: not removing multi-mappers")
+  
+}
+
+obj
+
+
 ##### 03.5 per marker stats #####
 # MAF information
 maf_filt(data = obj, maf = 0.0001) # for generating myFreq to plot only
@@ -266,31 +293,6 @@ dev.off()
 # Summary of excess HOBS
 table(per_loc_stats.df$Hobs > 0.5) 
 # note: due to family nature of the data, not filtering based on HWP or HOBS 
-
-
-##### 03.6 Drop multi-mappers #####
-if(drop_multimappers==TRUE){
-  
-  # Read in the number alignments per locus file
-  counts_per_locus.FN
-  counts_per_locus.df <- read.table(file = counts_per_locus.FN, header = F)
-  head(counts_per_locus.df)
-  colnames(counts_per_locus.df) <- c("count", "mname")
-  
-  # How many have more than one alignment? 
-  loci_to_remove.vec <- counts_per_locus.df[counts_per_locus.df$count > 1, "mname"]
-  length(loci_to_remove.vec)
-  write.table(x = loci_to_remove.vec, file = "03_results/multimapper_loci_to_remove.txt", quote = F, sep = "\t" , row.names = F, col.names = F)
-  
-  drop_loci(df = obj, drop_monomorphic = F, drop_file = "03_results/multimapper_loci_to_remove.txt")
-  obj <- obj_filt
-  
-  
-}else{
-  
-  print("Note: not removing multi-mappers")
-  
-}
 
 ## View the ind or loc names
 inds <- indNames(obj)
