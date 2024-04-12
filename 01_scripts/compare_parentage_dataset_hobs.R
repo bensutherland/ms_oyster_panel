@@ -6,20 +6,20 @@
 
 #### 01. Plot VIU vs. OCP HOBS ####
 # Obtain parentage genind from pilot, and calculate per locus HOBS
-data_pilot.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/pilot_study/simple_pop_stats_v.0.5_2024-02-20/03_results/post-filters_prepared_for_parentage_rubias_built_problem_genos_rem_rubias_built.RData"
+data_pilot.FN <- "~/Documents/00_sbio/GBMF_UBC_Pacific_oyster/amplicon_panel/pilot_study/simple_pop_stats_v.0.6/03_results/post-filters_prepared_for_parentage_rubias_built_problem_genos_rem_rubias_built.RData"
 load(data_pilot.FN)
 parentage_obj_pilot <- obj_filt
 per_locus_stats(data = parentage_obj_pilot)
 per_loc_stats_pilot.df <- per_loc_stats.df
-nrow(per_loc_stats_pilot.df) # 347
+nrow(per_loc_stats_pilot.df) # 328
 
 # Obtain parentage genind from CHR8, and calculate per locus HOBS
-data_OCP23.FN <- "~/Documents/00_sbio/VIU/VIU_oyster/CHR8/OCP23/OCP23_parentage_v.0.3/simple_pop_stats_OCP23_v.0.3/03_results/post-filters_prepared_for_parentage_rubias_built_problem_genos_rem_rubias_built.RData"
+data_OCP23.FN <- "~/Documents/00_sbio/VIU/VIU_oyster/CHR8/OCP23/OCP23_parentage_v.0.4/simple_pop_stats/03_results/post-filters_prepared_for_parentage_rubias_built_problem_genos_rem_rubias_built.RData"
 load(data_OCP23.FN)
 parentage_obj_OCP23 <- obj_filt
 per_locus_stats(data = parentage_obj_OCP23) # NOTE: this will overwrite the original per locus stats output in the folder
 per_loc_stats_OCP23.df <- per_loc_stats.df
-nrow(per_loc_stats_OCP23.df) # 300
+nrow(per_loc_stats_OCP23.df) # 289
 
 # View data
 head(per_loc_stats_OCP23.df)
@@ -27,7 +27,7 @@ head(per_loc_stats_OCP23.df)
 # Combine both datasets
 per_loc_stats_both_datasets.df <- merge(x = per_loc_stats_pilot.df, y = per_loc_stats_OCP23.df, by = "mname")
 head(per_loc_stats_both_datasets.df)
-dim(per_loc_stats_both_datasets.df) # 248 shared
+dim(per_loc_stats_both_datasets.df) # 239 shared
 colnames(per_loc_stats_both_datasets.df) <- gsub(pattern = "\\.x", replacement = ".pilot", x = colnames(per_loc_stats_both_datasets.df))
 colnames(per_loc_stats_both_datasets.df) <- gsub(pattern = ".y", replacement = ".OCP23", x = colnames(per_loc_stats_both_datasets.df))
 head(per_loc_stats_both_datasets.df)
@@ -61,10 +61,10 @@ load(data_pilot_popgen.FN)
 obj <- repool(separated_pops$VIU_F2, separated_pops$VIU_F1, separated_pops$VIU_F0, separated_pops$DPB
        , separated_pops$PEN, separated_pops$GUR, separated_pops$FRA, separated_pops$JPN, separated_pops$CHN
           )
-obj # should be 425 loci and 312 inds after filters
+obj # should be 409 loci and 312 inds after filters
 per_locus_stats(obj)
 per_loc_stats_popgen.df <- per_loc_stats.df
-nrow(per_loc_stats_popgen.df) # 425 loci
+nrow(per_loc_stats_popgen.df) # 409 loci
 head(per_loc_stats_popgen.df)
 
 ## Plotting
